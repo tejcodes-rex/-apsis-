@@ -36,3 +36,6 @@ yarn-error.log*
 # scratch crops + the organizer case-file image (not part of the product)
 /_crops
 6a2456dc381c0_themesfinal.png
+
+# editor/agent session state
+.claude/
