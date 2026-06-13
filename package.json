@@ -1,0 +1,37 @@
+{
+  "name": "apsis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "APSIS — Autonomous Space Traffic Management. Real-time conjunction screening, collision-probability computation, and autonomous avoidance maneuver planning for objects in Earth orbit.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "data:refresh": "tsx scripts/refresh-tle.ts"
+  },
+  "dependencies": {
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "satellite.js": "5.0.0",
+    "three": "0.172.0",
+    "zustand": "5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.7",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "@types/three": "0.172.0",
+    "autoprefixer": "10.4.20",
+    "playwright": "^1.49.1",
+    "postcss": "8.5.1",
+    "tailwindcss": "3.4.17",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "2.1.8"
+  }
+}
