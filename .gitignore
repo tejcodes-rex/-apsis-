@@ -43,3 +43,5 @@ yarn-error.log*
 /video/*.webm
 /video/*.mp3
 /video/frame-*.png
+
+.vercel
