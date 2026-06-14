@@ -48,3 +48,6 @@ yarn-error.log*
 
 # local submission staging area (files already in repo: video/, deck/)
 /submission
+
+# private project handoff (accounts, pitch strategy) - local only
+/HANDOFF.md
