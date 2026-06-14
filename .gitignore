@@ -37,8 +37,6 @@ yarn-error.log*
 /_crops
 6a2456dc381c0_themesfinal.png
 
-# editor/agent session state
-.claude/
 
 # demo video: keep the final MP4, ignore the scratch workspace
 /video/raw

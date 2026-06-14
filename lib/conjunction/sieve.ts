@@ -52,7 +52,7 @@ export interface SieveOptions {
   onProgress?: (fraction: number, phase: string) => void;
 }
 
-type PairKey = string; // "minId_maxId" — string key avoids any id-range packing limit
+type PairKey = string; // "minId_maxId"; a string key avoids any id-range packing limit
 function packPair(a: number, b: number): PairKey {
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);

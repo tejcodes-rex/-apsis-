@@ -102,7 +102,7 @@ if (errors.length) {
 }
 // Heap growing more than 4x over the session suggests a real leak.
 if (h0 && growth > 3) {
-  console.error(`HEAP GREW ${(growth * 100).toFixed(0)}% — possible leak`);
+  console.error(`HEAP GREW ${(growth * 100).toFixed(0)}%, possible leak`);
   bad = true;
 }
 if (bad) process.exit(1);
