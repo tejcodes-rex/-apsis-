@@ -18,6 +18,11 @@ APSIS, Autonomous Space Traffic Management
 Real-time conjunction screening, collision-probability assessment, and autonomous
 avoidance-maneuver planning for objects in Earth orbit, on live NORAD data.
 
+## Links
+- Live demo: https://faraway-unstop-hackathon.vercel.app
+- GitHub: https://github.com/tejcodes-rex/-apsis-
+- Demo video: `video/APSIS-demo.mp4` (in the repo)
+
 ## Theme
 Space & Aerospace
 

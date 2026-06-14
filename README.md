@@ -8,6 +8,8 @@
 
 [Theme: Space &amp; Aerospace](#) · [FAR AWAY 2026](#)
 
+### [Live demo](https://faraway-unstop-hackathon.vercel.app) &nbsp;·&nbsp; [Demo video](video/APSIS-demo.mp4)
+
 ![APSIS mission-control view](docs/screens/01-overview.png)
 
 </div>
