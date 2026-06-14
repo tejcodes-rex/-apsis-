@@ -38,7 +38,15 @@ type Req =
       targetPc?: number;
       reqId: number;
     }
-  | { kind: "screenAll"; minAltKm: number; maxAltKm: number; windowHours: number; reqId: number };
+  | { kind: "screenAll"; minAltKm: number; maxAltKm: number; windowHours: number; reqId: number }
+  | {
+      kind: "screenFleet";
+      operatorTags: string[];
+      maxAssets: number;
+      nowMs: number;
+      windowHours: number;
+      reqId: number;
+    };
 
 self.onmessage = async (e: MessageEvent<Req>) => {
   const msg = e.data;
@@ -125,6 +133,52 @@ self.onmessage = async (e: MessageEvent<Req>) => {
       targetPc: msg.targetPc,
     });
     (self as unknown as Worker).postMessage({ kind: "plan:done", reqId: msg.reqId, maneuver });
+    return;
+  }
+
+  if (msg.kind === "screenFleet") {
+    const tags = new Set(msg.operatorTags);
+    // Spread the sample across the fleet rather than taking the first N in id
+    // order, so the board reflects the whole constellation.
+    const fleet = catalog.objects.filter((o) => o.tle.type === "PAYLOAD" && tags.has(o.tle.operator ?? ""));
+    const step = Math.max(1, Math.floor(fleet.length / msg.maxAssets));
+    const sample = fleet.filter((_, i) => i % step === 0).slice(0, msg.maxAssets);
+
+    const board: {
+      assetId: number;
+      name: string;
+      worstPc: number;
+      count: number;
+      worstSecondary: string;
+    }[] = [];
+    for (let i = 0; i < sample.length; i++) {
+      const asset = sample[i];
+      const conjunctions = screenPrimary(asset, catalog.objects, msg.nowMs, {
+        windowHours: msg.windowHours,
+        gateKm: 20,
+      });
+      const worst = conjunctions[0];
+      board.push({
+        assetId: asset.tle.noradId,
+        name: asset.tle.name,
+        worstPc: worst?.pc ?? 0,
+        count: conjunctions.length,
+        worstSecondary: worst?.secondaryName ?? "none",
+      });
+      (self as unknown as Worker).postMessage({
+        kind: "screenFleet:progress",
+        reqId: msg.reqId,
+        fraction: (i + 1) / sample.length,
+      });
+    }
+    board.sort((a, b) => b.worstPc - a.worstPc);
+    (self as unknown as Worker).postMessage({
+      kind: "screenFleet:done",
+      reqId: msg.reqId,
+      board,
+      fleetSize: fleet.length,
+      sampled: sample.length,
+    });
     return;
   }
 

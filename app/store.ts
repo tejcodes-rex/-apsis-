@@ -43,6 +43,14 @@ interface AppState {
 
   featured: FeaturedEvent[];
   globalScan: { running: boolean; fraction: number; phase: string; results: Conjunction[] };
+  fleetScan: {
+    running: boolean;
+    fraction: number;
+    operator: string;
+    fleetSize: number;
+    sampled: number;
+    board: { assetId: number; name: string; worstPc: number; count: number; worstSecondary: string }[];
+  };
 
   pendingFocusSecondary: number | null;
 
@@ -58,6 +66,7 @@ interface AppState {
   setSimTime: (ms: number) => void;
   requestPropagate: () => void;
   runGlobalScan: (minAltKm: number, maxAltKm: number, windowHours: number) => void;
+  runFleetScan: (operator: string, operatorTags: string[], maxAssets: number, windowHours: number) => void;
 }
 
 let reqCounter = 1;
@@ -83,6 +92,7 @@ export const useApp = create<AppState>((set, get) => ({
   planning: false,
   featured: [],
   globalScan: { running: false, fraction: 0, phase: "", results: [] },
+  fleetScan: { running: false, fraction: 0, operator: "", fleetSize: 0, sampled: 0, board: [] },
   pendingFocusSecondary: null,
 
   initEngine: () => {
@@ -144,6 +154,23 @@ export const useApp = create<AppState>((set, get) => ({
         case "screenAll:done": {
           set((s) => ({
             globalScan: { ...s.globalScan, running: false, fraction: 1, results: m.conjunctions },
+          }));
+          break;
+        }
+        case "screenFleet:progress": {
+          set((s) => ({ fleetScan: { ...s.fleetScan, fraction: m.fraction } }));
+          break;
+        }
+        case "screenFleet:done": {
+          set((s) => ({
+            fleetScan: {
+              ...s.fleetScan,
+              running: false,
+              fraction: 1,
+              board: m.board,
+              fleetSize: m.fleetSize,
+              sampled: m.sampled,
+            },
           }));
           break;
         }
@@ -252,5 +279,21 @@ export const useApp = create<AppState>((set, get) => ({
     if (!worker) return;
     set({ globalScan: { running: true, fraction: 0, phase: "starting", results: [] } });
     worker.postMessage({ kind: "screenAll", minAltKm, maxAltKm, windowHours, reqId: reqCounter++ });
+  },
+
+  runFleetScan: (operator, operatorTags, maxAssets, windowHours) => {
+    const { worker, baseTimeMs } = get();
+    if (!worker) return;
+    set({
+      fleetScan: { running: true, fraction: 0, operator, fleetSize: 0, sampled: 0, board: [] },
+    });
+    worker.postMessage({
+      kind: "screenFleet",
+      operatorTags,
+      maxAssets,
+      nowMs: baseTimeMs,
+      windowHours,
+      reqId: reqCounter++,
+    });
   },
 }));
