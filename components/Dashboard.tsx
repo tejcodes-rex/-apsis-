@@ -18,13 +18,13 @@ export default function Dashboard() {
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col">
       <Header />
       <div className="flex flex-1 items-stretch justify-between gap-3 overflow-hidden px-3 pb-3">
-        <div className="pointer-events-auto flex w-[310px] flex-col gap-3 overflow-y-auto pr-1">
+        <div className="pointer-events-auto flex w-[270px] shrink-0 flex-col gap-3 overflow-y-auto pr-1 xl:w-[310px]">
           <AssetPanel />
           <RiskMeter />
           <FeaturedAlerts />
           <GlobalScanPanel />
         </div>
-        <div className="pointer-events-auto flex w-[360px] flex-col gap-3 overflow-y-auto pl-1">
+        <div className="pointer-events-auto flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto pl-1 xl:w-[360px]">
           <WatchList />
           <ConjunctionDetail />
           <ManeuverConsole />
