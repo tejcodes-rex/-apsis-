@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as sat from "satellite.js";
 import { useApp } from "../app/store";
+import { ensureClientCatalog, getClientObject } from "../app/clientCatalog";
 import { sampleOrbit, sampleManeuveredArc } from "../lib/astro/orbitpath";
 import { R_EARTH_WGS84 } from "../lib/astro/constants";
 
@@ -69,6 +70,7 @@ export default function Globe() {
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    ensureClientCatalog(); // start loading the shared catalog for path/analysis lookups
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
@@ -183,7 +185,7 @@ export default function Globe() {
       if (sig === lastSig) return;
       lastSig = sig;
 
-      const primaryObj = tleCache.get(s.primaryId);
+      const primaryObj = getClientObject(s.primaryId);
       if (!primaryObj) {
         lastSig = ""; // retry once cache hydrates
         return;
@@ -192,7 +194,7 @@ export default function Globe() {
       setLine(primaryOrbit, orbit);
 
       if (conj) {
-        const secObj = tleCache.get(conj.secondaryId);
+        const secObj = getClientObject(conj.secondaryId);
         if (secObj) {
           setLine(secondaryOrbit, sampleOrbit(secObj, s.baseTimeMs, 300));
         }
@@ -304,19 +306,6 @@ function indexOfId(ids: Int32Array, id: number): number {
   for (let i = 0; i < ids.length; i++) if (ids[i] === id) return i;
   return -1;
 }
-
-// Main-thread TLE cache, hydrated lazily from the bundled catalog so we can draw
-// orbit paths without round-tripping the worker for geometry.
-import type { SpaceObject } from "../lib/astro/types";
-import { buildCatalog } from "../lib/astro/catalog";
-const tleCache = new Map<number, SpaceObject>();
-fetch("/data/catalog.json")
-  .then((r) => r.json())
-  .then((raw) => {
-    const cat = buildCatalog(raw);
-    for (const o of cat.objects) tleCache.set(o.tle.noradId, o);
-  })
-  .catch(() => {});
 
 function writeColor(arr: Float32Array, idx: number, c: THREE.Color) {
   arr[idx * 3] = c.r;

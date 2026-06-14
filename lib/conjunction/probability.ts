@@ -40,6 +40,12 @@ export interface PcResult {
   missPlaneKm: number;
   /** Mahalanobis-style ratio of miss to combined 1-sigma (smaller = riskier). */
   sigmaRatio: number;
+  /** 2x2 combined covariance in the encounter plane, km^2 (row-major). */
+  c2: Mat2;
+  /** Projected miss vector in encounter-plane (xi, eta) coords, km. */
+  miss: [number, number];
+  /** Combined hard-body radius used, km. */
+  hbrKm: number;
 }
 
 /**
@@ -73,7 +79,9 @@ export function collisionProbability(
   C2 = [C2[0] + floor, sym, sym, C2[3] + floor];
 
   const Cinv = inv2(C2);
-  if (!Cinv) return { pc: 0, missPlaneKm: norm(proj), sigmaRatio: Infinity };
+  const mEarly: [number, number] = [dot(rRelEci, xi), dot(rRelEci, eta)];
+  if (!Cinv)
+    return { pc: 0, missPlaneKm: norm(proj), sigmaRatio: Infinity, c2: C2, miss: mEarly, hbrKm };
   const detC = C2[0] * C2[3] - C2[1] * C2[2];
   const normConst = 1 / (2 * Math.PI * Math.sqrt(Math.max(detC, 1e-300)));
 
@@ -106,5 +114,26 @@ export function collisionProbability(
   const sigMax = Math.sqrt(Math.max(C2[0], C2[3]));
   const sigmaRatio = sigMax > 0 ? missPlaneKm / sigMax : Infinity;
 
-  return { pc, missPlaneKm, sigmaRatio };
+  return { pc, missPlaneKm, sigmaRatio, c2: C2, miss: m, hbrKm };
+}
+
+/**
+ * Principal axes of a 2x2 symmetric covariance: the 1-sigma semi-axis lengths
+ * and the rotation angle of the major axis. Used to draw the covariance ellipse
+ * in the encounter-plane view.
+ */
+export function covarianceEllipse(c2: Mat2): { major: number; minor: number; angleRad: number } {
+  const a = c2[0];
+  const b = c2[1];
+  const d = c2[3];
+  const tr = a + d;
+  const det = a * d - b * b;
+  const disc = Math.sqrt(Math.max(0, (tr / 2) * (tr / 2) - det));
+  const l1 = tr / 2 + disc; // larger eigenvalue
+  const l2 = tr / 2 - disc;
+  const major = Math.sqrt(Math.max(l1, 0));
+  const minor = Math.sqrt(Math.max(l2, 0));
+  // Eigenvector angle for the larger eigenvalue.
+  const angleRad = Math.abs(b) < 1e-18 ? (a >= d ? 0 : Math.PI / 2) : Math.atan2(l1 - a, b);
+  return { major, minor, angleRad };
 }
