@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "../app/store";
+import BplanePanel from "./BplanePanel";
 import {
   fmtClock,
   fmtDuration,
@@ -22,11 +23,13 @@ export default function Dashboard() {
           <AssetPanel />
           <RiskMeter />
           <FeaturedAlerts />
+          <FleetPanel />
           <GlobalScanPanel />
         </div>
         <div className="pointer-events-auto flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto pl-1 xl:w-[360px]">
           <WatchList />
           <ConjunctionDetail />
+          <BplanePanel />
           <ManeuverConsole />
         </div>
       </div>
@@ -466,6 +469,84 @@ function ManeuverConsole() {
       )}
     </Panel>
   );
+}
+
+function FleetPanel() {
+  const fleetScan = useApp((s) => s.fleetScan);
+  const runFleetScan = useApp((s) => s.runFleetScan);
+  const setPrimary = useApp((s) => s.setPrimary);
+  const runScreen = useApp((s) => s.runScreen);
+
+  const fleets: { label: string; op: string; tags: string[] }[] = [
+    { label: "Starlink", op: "STARLINK", tags: ["STARLINK"] },
+    { label: "Stations", op: "STATION", tags: ["STATION"] },
+    { label: "Recent launches", op: "RECENT", tags: ["RECENT"] },
+  ];
+
+  return (
+    <Panel title="Fleet Protection" accent="#7ee4ff">
+      <div className="readout text-[10px] leading-relaxed text-white/45">
+        Screen an entire operator constellation at once and rank each asset by its worst
+        conjunction.
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {fleets.map((f) => (
+          <button
+            key={f.op}
+            onClick={() => runFleetScan(f.op, f.tags, 30, 24)}
+            disabled={fleetScan.running}
+            className="readout rounded border border-instrument/25 bg-instrument/5 px-2 py-1 text-[11px] text-instrument-soft hover:bg-instrument/15 disabled:opacity-40"
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {fleetScan.running && (
+        <div className="mt-2">
+          <div className="readout text-[10px] text-white/50">
+            Screening {fleetScan.operator} fleet... {(fleetScan.fraction * 100).toFixed(0)}%
+          </div>
+          <div className="mt-1 h-1 overflow-hidden rounded-full bg-vacuum-700">
+            <div className="h-full bg-instrument" style={{ width: `${fleetScan.fraction * 100}%` }} />
+          </div>
+        </div>
+      )}
+      {!fleetScan.running && fleetScan.board.length > 0 && (
+        <div className="mt-2">
+          <div className="readout mb-1 text-[10px] text-white/45">
+            {fleetScan.operator} · {fleetScan.sampled} of {fleetScan.fleetSize} assets screened
+          </div>
+          <div className="max-h-[150px] space-y-0.5 overflow-y-auto">
+            {fleetScan.board.slice(0, 12).map((row) => (
+              <button
+                key={row.assetId}
+                onClick={() => {
+                  setPrimary(row.assetId);
+                  runScreen();
+                }}
+                className="flex w-full items-center justify-between rounded px-1.5 py-1 text-left hover:bg-white/5"
+              >
+                <span className="readout truncate text-[10px] text-white/75">{row.name}</span>
+                <span
+                  className="readout ml-2 shrink-0 text-[10px]"
+                  style={{ color: SEVERITY_COLOR[severityOf(row.worstPc)] }}
+                >
+                  {fmtPc(row.worstPc)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function severityOf(pc: number): "INFO" | "WATCH" | "WARNING" | "CRITICAL" {
+  if (pc >= 1e-4) return "CRITICAL";
+  if (pc >= 1e-5) return "WARNING";
+  if (pc >= 1e-7) return "WATCH";
+  return "INFO";
 }
 
 function GlobalScanPanel() {

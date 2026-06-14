@@ -120,8 +120,13 @@ Then:
 
 - The app opens on a live screening of the ISS. Drag to orbit the globe, scroll to zoom.
 - Click an entry under **Predicted High-Energy Events** to load a real conjunction.
+- Read the **Encounter Plane (B-plane)** panel: the covariance 1σ/3σ ellipses, the
+  combined hard-body disk, and the miss vector that together define the probability,
+  plus how that probability evolves through closest approach.
 - Click **Plan Avoidance Maneuver** to watch the autonomous planner solve it; the cyan
   arc on the globe is the recomputed post-burn trajectory.
+- Use **Fleet Protection** to screen an entire operator constellation at once and rank
+  every asset by its worst conjunction.
 - Use **Run Global Scan** to screen the entire 700-900 km debris shell, all pairs.
 
 ### Other commands

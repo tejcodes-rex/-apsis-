@@ -64,6 +64,16 @@ if (await heroBtn.count()) {
   console.log("captured scenario");
 }
 
+// Capture the encounter-plane (B-plane) analysis panel.
+const bplane = page.locator("section", { hasText: "Encounter Plane" }).first();
+if (await bplane.count()) {
+  await bplane.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1500);
+  await bplane.screenshot({ path: `${OUT}/05-bplane.png` });
+  console.log("captured bplane");
+  await page.evaluate(() => window.scrollTo(0, 0));
+}
+
 // Plan the avoidance maneuver.
 const planBtn = page.getByTestId("plan-maneuver").first();
 if (await planBtn.count()) {
