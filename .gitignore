@@ -45,3 +45,6 @@ yarn-error.log*
 /video/frame-*.png
 
 .vercel
+
+# local submission staging area (files already in repo: video/, deck/)
+/submission
