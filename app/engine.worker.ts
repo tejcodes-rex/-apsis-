@@ -92,7 +92,29 @@ self.onmessage = async (e: MessageEvent<Req>) => {
     return;
   }
 
-  if (!catalog) return;
+  if (!catalog) {
+    // A request arrived before the catalog finished loading. Still post the
+    // matching terminal message so the UI never gets stuck waiting on a response.
+    const w = self as unknown as Worker;
+    switch (msg.kind) {
+      case "propagate":
+        w.postMessage({ kind: "propagate:done", reqId: msg.reqId, timeMs: msg.timeMs, pos: new Float32Array(0), alive: new Uint8Array(0) });
+        break;
+      case "screen":
+        w.postMessage({ kind: "screen:done", reqId: msg.reqId, conjunctions: [] });
+        break;
+      case "plan":
+        w.postMessage({ kind: "plan:done", reqId: msg.reqId, secondaryId: msg.secondaryId, maneuver: null });
+        break;
+      case "screenFleet":
+        w.postMessage({ kind: "screenFleet:done", reqId: msg.reqId, board: [], fleetSize: 0, sampled: 0 });
+        break;
+      case "screenAll":
+        w.postMessage({ kind: "screenAll:done", reqId: msg.reqId, conjunctions: [], shellCount: 0 });
+        break;
+    }
+    return;
+  }
 
   if (msg.kind === "propagate") {
     const n = catalog.objects.length;
@@ -146,7 +168,7 @@ self.onmessage = async (e: MessageEvent<Req>) => {
         maneuver = null;
       }
     }
-    (self as unknown as Worker).postMessage({ kind: "plan:done", reqId: msg.reqId, maneuver });
+    (self as unknown as Worker).postMessage({ kind: "plan:done", reqId: msg.reqId, secondaryId: msg.secondaryId, maneuver });
     return;
   }
 

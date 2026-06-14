@@ -40,5 +40,8 @@ yarn-error.log*
 # editor/agent session state
 .claude/
 
-# generated demo video workspace (uploaded externally, not committed)
-/video
+# demo video: keep the final MP4, ignore the scratch workspace
+/video/raw
+/video/*.webm
+/video/*.mp3
+/video/frame-*.png

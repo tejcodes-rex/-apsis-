@@ -111,6 +111,9 @@ Propellant is reported from the rocket equation for a reference 500 kg / 220 s-I
   closes one full revolution to under 5 cm;
 - Foster Pc matches the closed form `Pc = 1 - exp(-R²/2σ²)` for an isotropic centered
   encounter (an absolute-value check, not just ordering);
+- Foster Pc matches an independent 3D Monte-Carlo estimate (500k samples) for an
+  anisotropic encounter to within 10 percent, cross-validating the encounter-plane
+  projection and quadrature against direct sampling;
 - the covariance rotation is exact: `C·I = σ_i² · I`, i.e. the in-track unit vector is
   the eigenvector of the largest uncertainty in ECI;
 - the covariance trace grows with element age;

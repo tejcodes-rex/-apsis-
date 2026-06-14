@@ -125,6 +125,44 @@ describe("Foster Pc reference value", () => {
   });
 });
 
+describe("Foster Pc Monte-Carlo cross-validation", () => {
+  it("matches an independent 3D Monte-Carlo estimate for an anisotropic encounter", () => {
+    // Deterministic PRNG (mulberry32) + Box-Muller, so the test never flakes.
+    let s = 0x2545f491 >>> 0;
+    const rand = () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const randn = () => Math.sqrt(-2 * Math.log(Math.max(rand(), 1e-12))) * Math.cos(2 * Math.PI * rand());
+
+    const sx = 0.2;
+    const sy = 0.5;
+    const sz = 0.3; // km, anisotropic ECI covariance
+    const cov: Mat3 = [sx * sx, 0, 0, 0, sy * sy, 0, 0, 0, sz * sz];
+    const rRel: Vec3 = [0.3, 0.0, 0.1];
+    const vRel: Vec3 = [0, 7.5, 0]; // encounter plane is x-z (perpendicular to y)
+    const hbr = 0.1;
+
+    const { pc } = collisionProbability(rRel, vRel, cov, hbr);
+
+    // Sample relative position ~ N(rRel, cov); a collision is an in-plane
+    // separation (perpendicular to the relative velocity) below the hard-body
+    // radius. This is fully independent of the encounter-plane quadrature.
+    const N = 500000;
+    let hits = 0;
+    for (let i = 0; i < N; i++) {
+      const x = rRel[0] + sx * randn();
+      const z = rRel[2] + sz * randn();
+      if (Math.hypot(x, z) < hbr) hits++;
+    }
+    const mc = hits / N;
+    expect(mc).toBeGreaterThan(0);
+    expect(Math.abs(pc - mc) / mc).toBeLessThan(0.1);
+  });
+});
+
 describe("Covariance rotation correctness", () => {
   it("places the dominant uncertainty axis exactly along in-track in ECI", () => {
     // C_eci = Bᵀ diag(σ²) B must have the in-track unit vector as the eigenvector

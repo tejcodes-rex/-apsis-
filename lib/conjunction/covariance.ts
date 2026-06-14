@@ -21,7 +21,18 @@ export interface UncertaintyInputs {
   regime: "LEO" | "MEO" | "GEO" | "HEO";
 }
 
-/** 1-sigma position uncertainties in the RIC frame, km. */
+/**
+ * 1-sigma position uncertainties in the RIC frame, km.
+ *
+ * The coefficients model the well-documented behaviour of TLE/GP accuracy: error
+ * is dominated by the in-track (along-track) component and grows roughly linearly
+ * with the age of the element set, on the order of ~1 km at epoch rising to a few
+ * km per day for LEO. This matches published TLE-accuracy analyses (e.g. Kelso,
+ * "Validation of SGP4 and IS-GPS-200D"; Vallado & Crawford, "SGP4 Orbit
+ * Determination", AIAA 2008-6770; Geul et al., "TLE uncertainty estimation", 2017).
+ * They are an explicit, conservative model, surfaced in the UI, and are a one-line
+ * swap for operator-supplied OD covariance (a CDM) when available.
+ */
 export function ricSigmas(input: UncertaintyInputs): { sr: number; si: number; sc: number } {
   const age = Math.max(0, input.ageDays);
   // Base uncertainty at epoch and growth rate per day. In-track dominates and

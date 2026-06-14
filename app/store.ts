@@ -149,10 +149,11 @@ export const useApp = create<AppState>((set, get) => ({
           break;
         }
         case "plan:done": {
-          // Ignore a maneuver that arrives after the selection moved on, so we
-          // never show one conjunction's burn against a different conjunction.
+          // Accept only the response for the most recent plan request, and only
+          // if that conjunction is still selected, so a stale maneuver can never
+          // be shown against a different conjunction.
           const cur = get().conjunctions[get().selectedConjunctionIndex];
-          if (!cur || cur.secondaryId !== lastPlanSecondary) {
+          if (m.secondaryId !== lastPlanSecondary || !cur || cur.secondaryId !== lastPlanSecondary) {
             set({ planning: false });
             break;
           }

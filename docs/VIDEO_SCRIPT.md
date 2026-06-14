@@ -41,7 +41,14 @@ Action: click the top entry under **Predicted High-Energy Events**.
 Visual: the watchlist populates, the conjunction is selected, the assessment panel shows
 the numbers, the secondary turns red on the globe with its orbit drawn.
 
-### 1:20, 1:50 · See it
+### 1:20, 1:45 · The real collision geometry (B-plane)
+Action: point at the **Encounter Plane (B-plane)** panel.
+> "This is the actual collision geometry. The ellipse is our position uncertainty, the
+> red disk is the combined hard-body size, and the miss vector sits inside one sigma.
+> That is exactly why the probability is high. The curve shows how the risk peaks
+> through closest approach."
+
+### 1:45, 2:05 · See it
 Action: click **Jump to Closest Approach**, let time run to the encounter.
 > "Here is the encounter itself, the two objects converging. At this speed, a collision
 > fragments both into thousands of new pieces, and that is how Kessler syndrome starts."

@@ -4,10 +4,12 @@ Everything needed to fill the FAR AWAY Round 1 submission form. Copy/paste as ne
 
 ## Required deliverables (Round 1)
 - [x] **GitHub repository**, source, docs, setup instructions (this repo)
-- [x] **Project submission**, pitch deck (`deck/index.html`, ≤15 slides, demo shown) and a
-      recorded demo video (script in `docs/VIDEO_SCRIPT.md`)
-- [x] **Hardware (optional, included)**, `hardware/` reference design with schematic, RF
-      analysis, BOM, and netlist
+- [x] **Project submission**, pitch deck (`deck/index.html` + `deck/APSIS-deck.pdf`, 14
+      slides) and a narrated demo video (`video/APSIS-demo.mp4`, script in
+      `docs/VIDEO_SCRIPT.md`)
+- [x] **Hardware (optional)**, `hardware/` RF reference design: schematic, cascade
+      noise-figure and link-budget analysis, BOM, and netlist. PCB layout and gerbers
+      are the Round 2 hardware deliverable, not claimed for Round 1.
 
 ## Title
 APSIS, Autonomous Space Traffic Management

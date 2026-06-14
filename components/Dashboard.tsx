@@ -467,7 +467,7 @@ function ManeuverConsole() {
           <div className="mt-2 flex items-center gap-2">
             <span className="h-2 w-2 animate-flicker rounded-full bg-signal-safe" />
             <span className="readout text-[10px] text-signal-safe">
-              MANEUVER PLOTTED · cyan arc shows post-burn trajectory
+              MANEUVER PLOTTED · cyan arc is a two-body preview of the post-burn track
             </span>
           </div>
           <button onClick={planSelected} className="btn mt-3 w-full">
