@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>APSIS — Pitch Deck</title>
+<title>APSIS, Pitch Deck</title>
 <style>
   :root{
     --bg:#05070d; --panel:#0a0e18; --cyan:#4fd6ff; --soft:#7ee4ff;
@@ -80,15 +80,15 @@
     <div class="card"><div class="kpi r">3</div><p>events made most of today's debris: 2007, 2009, 2021</p></div>
     <div class="card"><div class="kpi r">Manual</div><p>operators still clear conjunctions by hand</p></div>
   </div>
-  <p style="margin-top:26px">Mega-constellations are adding tens of thousands of satellites. Human-in-the-loop avoidance does not scale. One uncontrolled collision can trigger a chain reaction that closes an orbital shell for decades — <span class="red">Kessler syndrome</span>.</p>
+  <p style="margin-top:26px">Mega-constellations are adding tens of thousands of satellites. Human-in-the-loop avoidance does not scale. One uncontrolled collision can trigger a chain reaction that closes an orbital shell for decades, <span class="red">Kessler syndrome</span>.</p>
   <div class="foot"><span>APSIS</span><span>02 / 14</span></div>
 </section>
 
 <!-- 3 INSIGHT -->
 <section class="slide">
   <div class="eyebrow">Insight</div>
-  <h2>Space needs air-traffic control —<br>and it has to be <span class="accent">autonomous</span>.</h2>
-  <p class="big" style="margin-top:10px">Predict every close approach. Quantify the real collision probability. Decide and execute the cheapest maneuver that removes the risk — without waiting for a human.</p>
+  <h2>Space needs air-traffic control , <br>and it has to be <span class="accent">autonomous</span>.</h2>
+  <p class="big" style="margin-top:10px">Predict every close approach. Quantify the real collision probability. Decide and execute the cheapest maneuver that removes the risk, without waiting for a human.</p>
   <div class="foot"><span>APSIS</span><span>03 / 14</span></div>
 </section>
 
@@ -99,7 +99,7 @@
   <div class="grid g3">
     <div class="card"><h3 class="accent">1 · Ingest &amp; Propagate</h3><p>Live NORAD catalog, 8,400+ real objects, SGP4/SDP4 on every one.</p></div>
     <div class="card"><h3 class="accent">2 · Screen</h3><p>Protected-asset-vs-catalog and all-pairs spatial-hash sieve across a shell.</p></div>
-    <div class="card"><h3 class="accent">3 · Assess</h3><p>TCA, miss distance, and Foster 2D collision probability — the operational standard.</p></div>
+    <div class="card"><h3 class="accent">3 · Assess</h3><p>TCA, miss distance, and Foster 2D collision probability, the operational standard.</p></div>
     <div class="card"><h3 class="green">4 · Decide</h3><p>Minimum-propellant avoidance maneuver, optimized and explained.</p></div>
     <div class="card"><h3 class="green">5 · Act</h3><p>Post-burn trajectory recomputed and verified below the safe line.</p></div>
     <div class="card"><h3 class="plasma">6 · Visualize</h3><p>Real-time 3D mission-control globe of the whole picture.</p></div>
@@ -117,7 +117,7 @@
   <div class="grid g4">
     <div class="card"><div class="kpi r">0.31 km</div><p>miss distance</p></div>
     <div class="card"><div class="kpi">13.1 km/s</div><p>relative speed</p></div>
-    <div class="card"><div class="kpi r">1.07×10⁻⁴</div><p>collision probability — above the action line</p></div>
+    <div class="card"><div class="kpi r">1.07×10⁻⁴</div><p>collision probability, above the action line</p></div>
     <div class="card"><div class="kpi g">&lt; 1 m/s</div><p>burn APSIS uses to clear it</p></div>
   </div>
   <p style="margin-top:22px">Found by re-running <span class="mono accent">scripts/find-events.ts</span> on the bundled catalog. Nothing here is staged.</p>
@@ -132,7 +132,7 @@
     <div>
       <p>At closest approach the relative motion is linear. We collapse the 3D geometry onto the <span class="accent">encounter plane</span> perpendicular to the relative velocity, project the combined position covariance into that plane, and integrate the 2D Gaussian over the combined hard-body disk.</p>
       <ul>
-        <li>Direct polar quadrature — exact in the fine limit</li>
+        <li>Direct polar quadrature, exact in the fine limit</li>
         <li>The same method NASA CARA and ESA run operationally</li>
         <li>Covariance model documented and shown in the UI, not hidden</li>
       </ul>
@@ -157,15 +157,15 @@
   <div class="grid g2">
     <div>
       <ul>
-        <li>Searches lead time × in-track Δv — the minimum-energy axis for separation</li>
+        <li>Searches lead time × in-track Δv, the minimum-energy axis for separation</li>
         <li>Bisects for the smallest burn that drives Pc below the safe target</li>
         <li>Propagates the <span class="accent">actual post-burn orbit</span> with a universal-variable two-body solver</li>
         <li><span class="green">Differential correction</span> against SGP4 cancels model error to first order</li>
-        <li>Reports Δv, lead time, propellant, before/after Pc — and explains itself</li>
+        <li>Reports Δv, lead time, propellant, before/after Pc, and explains itself</li>
       </ul>
     </div>
     <div class="card"><p class="mono" style="font-size:14px;line-height:1.7;color:#bfe3ff">"...a 4.2 cm/s prograde in-track burn executed 95 min before closest approach widens the miss to 8.6 km and lowers probability to 9.1×10⁻⁷, a 1.2×10² reduction, at a propellant cost of 9.7 g for a 500 kg / 220 s-Isp bus."</p>
-    <p style="margin-top:12px;color:var(--dim);font-size:13px">— generated decision rationale, citing exact optimizer outputs</p></div>
+    <p style="margin-top:12px;color:var(--dim);font-size:13px">,  generated decision rationale, citing exact optimizer outputs</p></div>
   </div>
   <div class="foot"><span>APSIS</span><span>07 / 14</span></div>
 </section>
@@ -180,7 +180,7 @@
     <div class="card"><h3 class="accent">1 part in 10⁶</h3><p>energy &amp; angular-momentum conservation</p></div>
     <div class="card"><h3 class="green">reproducible</h3><p>every featured conjunction re-derivable from a script</p></div>
   </div>
-  <p style="margin-top:24px">Strict TypeScript, no <span class="mono">any</span> in the engine, pure functions with no UI dependencies — the physics is a library you could lift out and reuse.</p>
+  <p style="margin-top:24px">Strict TypeScript, no <span class="mono">any</span> in the engine, pure functions with no UI dependencies, the physics is a library you could lift out and reuse.</p>
   <div class="foot"><span>APSIS</span><span>08 / 14</span></div>
 </section>
 
@@ -204,7 +204,7 @@
   <div class="grid g4">
     <div class="card"><h3 class="accent">Engine</h3><p>TypeScript, SGP4 (satellite.js), custom conjunction / Pc / maneuver code</p></div>
     <div class="card"><h3 class="accent">Compute</h3><p>Web Worker, transferable buffers, ~12 Hz full-catalog propagation</p></div>
-    <div class="card"><h3 class="accent">Render</h3><p>Three.js — custom point &amp; atmosphere shaders</p></div>
+    <div class="card"><h3 class="accent">Render</h3><p>Three.js, custom point &amp; atmosphere shaders</p></div>
     <div class="card"><h3 class="accent">App</h3><p>Next.js 15, React 19, Zustand, Tailwind; deploys to the edge</p></div>
   </div>
   <p style="margin-top:24px">No backend needed for the demo. The whole pipeline runs client-side, which is also the proof that it is fast.</p>
@@ -222,14 +222,14 @@ React UI ──state──► Zustand ──msg──► Engine Web Worker
                     │
    lib/  pure tested astrodynamics (no UI deps)
    astro · conjunction · maneuver · math</div>
-  <p style="margin-top:22px">The <span class="mono accent">lib/</span> core has zero UI dependencies and full test coverage — the same code runs in the app, the worker, the screening scripts, and the test suite.</p>
+  <p style="margin-top:22px">The <span class="mono accent">lib/</span> core has zero UI dependencies and full test coverage, the same code runs in the app, the worker, the screening scripts, and the test suite.</p>
   <div class="foot"><span>APSIS</span><span>11 / 14</span></div>
 </section>
 
 <!-- 12 HARDWARE -->
 <section class="slide">
   <div class="eyebrow">Hardware companion</div>
-  <h2>APSIS Ground Node — closing the loop.</h2>
+  <h2>APSIS Ground Node, closing the loop.</h2>
   <div class="grid g2">
     <div>
       <p>A low-cost, GPS-disciplined 137/435 MHz receiver that observes real satellite passes and feeds Doppler measurements back to APSIS.</p>
@@ -254,7 +254,7 @@ React UI ──state──► Zustand ──msg──► Engine Web Worker
   <div class="eyebrow">Roadmap</div>
   <h2>From MVP to orbital infrastructure.</h2>
   <div class="grid g3">
-    <div class="card"><h3 class="green">Round 1 — now</h3><p>Working platform: screening, probability, autonomous maneuver, validated engine, 3D ops view.</p></div>
+    <div class="card"><h3 class="green">Round 1, now</h3><p>Working platform: screening, probability, autonomous maneuver, validated engine, 3D ops view.</p></div>
     <div class="card"><h3 class="accent">Round 2</h3><p>CDM/operator covariance ingest, multi-asset fleet protection, maneuver scheduling, ground-node PCB layout + gerbers.</p></div>
     <div class="card"><h3 class="plasma">Round 3</h3><p>Continuous OD from a ground-node mesh, constellation-scale autonomy, maneuver de-confliction across thousands of assets.</p></div>
   </div>

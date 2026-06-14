@@ -7,7 +7,7 @@ test suite (`tests/engine.test.ts`) checks the parts that have a known answer.
 ## 1. Propagation
 
 Each object is described by a Two-Line Element set. We propagate with **SGP4/SDP4**
-(via `satellite.js`), the analytic model TLEs are defined against — using anything
+(via `satellite.js`), the analytic model TLEs are defined against, using anything
 else with TLE inputs introduces error larger than the perturbations it adds. SGP4
 returns position and velocity in the TEME frame, which we treat as ECI for the short
 encounter timescales involved.
@@ -54,7 +54,7 @@ and ESA.
   and avoids the convergence caveats of the analytic (Chan) series across the wide
   range of geometries in a real catalog.
 
-### Covariance — the honest part
+### Covariance, the honest part
 
 TLE/GP data ships **no covariance**, yet Pc is meaningless without one. APSIS uses a
 documented, replaceable model (`covariance.ts`): a diagonal covariance in each object's
@@ -73,7 +73,7 @@ When Pc crosses the action line, the planner (`maneuver/optimizer.ts`) searches 
 maneuver design space:
 
 - **Direction:** in-track. An along-track impulse changes the period, so the along-track
-  separation grows roughly linearly with lead time — the minimum-energy way to open a
+  separation grows roughly linearly with lead time, the minimum-energy way to open a
   miss distance.
 - **Lead time:** candidate burns from half an orbit up to several orbits before TCA.
   More lead means a smaller burn.

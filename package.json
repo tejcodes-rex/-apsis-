@@ -2,7 +2,7 @@
   "name": "apsis",
   "version": "0.1.0",
   "private": true,
-  "description": "APSIS — Autonomous Space Traffic Management. Real-time conjunction screening, collision-probability computation, and autonomous avoidance maneuver planning for objects in Earth orbit.",
+  "description": "APSIS, Autonomous Space Traffic Management. Real-time conjunction screening, collision-probability computation, and autonomous avoidance maneuver planning for objects in Earth orbit.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

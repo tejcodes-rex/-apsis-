@@ -1,4 +1,4 @@
-# APSIS Ground Node — Receiver Reference Design
+# APSIS Ground Node, Receiver Reference Design
 
 The APSIS Ground Node is a low cost, GPS disciplined satellite receiver that closes
 the loop on the APSIS platform. The software side predicts where objects will be;
@@ -75,7 +75,7 @@ F_total ≈ 1.047 + 0.349/0.955 + 0.148/0.708 + 0.445/(0.708·63.1) + 2.55/(0.70
 
 So a 5.5 dB SDR is pulled down to a **system noise figure of about 2.3 dB**, set mostly
 by the unavoidable filter loss in front of the LNA. That is the entire point of the
-board: an RTL-SDR alone on this band sits near 5–6 dB.
+board: an RTL-SDR alone on this band sits near 5-6 dB.
 
 ### 2.2 Link budget sanity check (435 MHz cubesat beacon)
 

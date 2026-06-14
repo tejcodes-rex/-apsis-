@@ -4,7 +4,7 @@
  * Screening every object against every other is O(n^2) and intractable for a
  * full catalog. Real systems instead bin propagated positions into a 3D spatial
  * hash at each time sample and only consider pairs that share a local
- * neighbourhood — reducing the work to roughly O(n) per time step. We march a
+ * neighbourhood, reducing the work to roughly O(n) per time step. We march a
  * coarse time grid, collect every pair that ever falls within the search
  * neighbourhood, then hand those few candidates to the precise TCA + Foster Pc
  * refinement. The neighbourhood radius is sized to (gate + max-travel-per-step)

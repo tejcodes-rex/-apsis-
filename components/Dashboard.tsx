@@ -475,7 +475,7 @@ function GlobalScanPanel() {
   return (
     <Panel title="Full-Catalog Sieve">
       <div className="readout text-[10px] leading-relaxed text-white/45">
-        All-pairs spatial-hash screening across the congested 700–900 km debris shell.
+        All-pairs spatial-hash screening across the congested 700-900 km debris shell.
       </div>
       <button
         onClick={() => runGlobalScan(650, 950, 6)}

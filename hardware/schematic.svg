@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" font-family="monospace">
   <rect width="1100" height="520" fill="#05070d"/>
-  <text x="40" y="46" fill="#7ee4ff" font-size="22" letter-spacing="3">APSIS GROUND NODE — RF FRONT END</text>
+  <text x="40" y="46" fill="#7ee4ff" font-size="22" letter-spacing="3">APSIS GROUND NODE, RF FRONT END</text>
   <text x="40" y="70" fill="#5a7390" font-size="13">137 / 435 MHz GPS-disciplined receiver · system NF ≈ 2.3 dB</text>
 
   <!-- signal chain -->

@@ -119,7 +119,7 @@ body {
   pointer-events: none;
 }
 
-/* Button — instrument style. */
+/* Button, instrument style. */
 .btn {
   font-family: var(--font-mono);
   font-size: 12px;

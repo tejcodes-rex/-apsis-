@@ -48,7 +48,7 @@ const conjunctions = screenAllPairs(shell, nowMs, {
   },
 });
 
-console.log(`\nScreened in ${((Date.now() - t0) / 1000).toFixed(1)}s — ${conjunctions.length} approaches found`);
+console.log(`\nScreened in ${((Date.now() - t0) / 1000).toFixed(1)}s, ${conjunctions.length} approaches found`);
 
 const top = conjunctions.slice(0, 40);
 for (const c of top.slice(0, 10)) {

@@ -1,20 +1,20 @@
-# APSIS — Submission Pack
+# APSIS, Submission Pack
 
 Everything needed to fill the FAR AWAY Round 1 submission form. Copy/paste as needed.
 
 ## Required deliverables (Round 1)
-- [x] **GitHub repository** — source, docs, setup instructions (this repo)
-- [x] **Project submission** — pitch deck (`deck/index.html`, ≤15 slides, demo shown) and a
+- [x] **GitHub repository**, source, docs, setup instructions (this repo)
+- [x] **Project submission**, pitch deck (`deck/index.html`, ≤15 slides, demo shown) and a
       recorded demo video (script in `docs/VIDEO_SCRIPT.md`)
-- [x] **Hardware (optional, included)** — `hardware/` reference design with schematic, RF
+- [x] **Hardware (optional, included)**, `hardware/` reference design with schematic, RF
       analysis, BOM, and netlist
 
 ## Title
-APSIS — Autonomous Space Traffic Management
+APSIS, Autonomous Space Traffic Management
 
 ## One-line tagline
 Real-time conjunction screening, collision-probability assessment, and autonomous
-avoidance-maneuver planning for objects in Earth orbit — on live NORAD data.
+avoidance-maneuver planning for objects in Earth orbit, on live NORAD data.
 
 ## Theme
 Space & Aerospace
@@ -23,7 +23,7 @@ Space & Aerospace
 Orbit is filling with debris moving at 14 km/s, and operators still clear collision
 risks by hand. APSIS is autonomous space-traffic control: it screens a live catalog,
 computes real collision probabilities, and plans the minimum-propellant avoidance
-maneuver — visualized on a 3D mission-control globe. Real data, real physics, real
+maneuver, visualized on a 3D mission-control globe. Real data, real physics, real
 autonomy.
 
 ## What it does
@@ -45,17 +45,16 @@ Worker; the 3D globe is Three.js with custom point and atmosphere shaders. App i
 Next.js 15 + React 19 + Zustand + Tailwind. Engine validated with a Vitest suite.
 
 ## Real, reproducible result
-QIANFAN-168 (active satellite) vs a Fengyun-1C ASAT debris fragment — miss 0.31 km,
+QIANFAN-168 (active satellite) vs a Fengyun-1C ASAT debris fragment, miss 0.31 km,
 relative speed 13.1 km/s, collision probability 1.07×10⁻⁴ (above the 1×10⁻⁴ action
 line). Found by re-running `scripts/find-events.ts`; resolved by a sub-m/s in-track
 burn.
 
 ## Challenges
 - Computing a defensible collision probability from TLE data, which carries no
-  covariance — solved with a documented, replaceable uncertainty model.
-- Propagating a post-burn orbit when SGP4 cannot continue from an arbitrary state —
-  solved with a two-body solver plus differential correction anchored to SGP4.
-- Screening thousands of objects interactively — solved with a geometric sieve plus a
+  covariance, solved with a documented, replaceable uncertainty model.
+- Propagating a post-burn orbit when SGP4 cannot continue from an arbitrary state, solved with a two-body solver plus differential correction anchored to SGP4.
+- Screening thousands of objects interactively, solved with a geometric sieve plus a
   spatial-hash all-pairs filter, all off the main thread.
 
 ## Accomplishments

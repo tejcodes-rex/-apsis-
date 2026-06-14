@@ -12,7 +12,7 @@ export const MU_EARTH = 398600.8;
 /** Earth equatorial radius, km (WGS-72). */
 export const R_EARTH = 6378.135;
 
-/** Earth equatorial radius, km (WGS-84) — used for geodetic/render math. */
+/** Earth equatorial radius, km (WGS-84), used for geodetic/render math. */
 export const R_EARTH_WGS84 = 6378.137;
 
 /** Earth flattening (WGS-84). */

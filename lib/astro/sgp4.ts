@@ -2,7 +2,7 @@
  * SGP4 propagation layer.
  *
  * We use satellite.js for the SGP4/SDP4 core because re-deriving the analytic
- * perturbation model adds risk without adding insight — the value APSIS creates
+ * perturbation model adds risk without adding insight, the value APSIS creates
  * is in the conjunction, probability, and maneuver layers built on top of it.
  * This module wraps the library in a typed, cached, frame-consistent interface
  * and derives the classical orbit summary we use for filtering and display.

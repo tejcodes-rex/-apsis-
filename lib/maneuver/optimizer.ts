@@ -1,9 +1,8 @@
 /**
  * Autonomous collision-avoidance maneuver planner.
  *
- * Given a flagged conjunction, the planner searches the maneuver design space —
- * lead time before TCA and an in-track delta-V (the most propellant-efficient
- * direction for changing miss distance) — and returns the *minimum-propellant*
+ * Given a flagged conjunction, the planner searches the maneuver design space, * lead time before TCA and an in-track delta-V (the most propellant-efficient
+ * direction for changing miss distance), and returns the *minimum-propellant*
  * impulsive burn that drives collision probability below the safe target.
  *
  * Fidelity note: the post-burn arc is evaluated with the differential technique
@@ -218,7 +217,7 @@ function buildRationale(
   return [
     `Conjunction with ${secondary.tle.name} (NORAD ${secondary.tle.noradId}) screened at`,
     `${c.missKm.toFixed(2)} km miss, closing at ${c.relativeSpeedKmps.toFixed(2)} km/s,`,
-    `collision probability ${c.pc.toExponential(2)} — above the ${PC_ACTION_THRESHOLD.toExponential(0)} action line.`,
+    `collision probability ${c.pc.toExponential(2)}, above the ${PC_ACTION_THRESHOLD.toExponential(0)} action line.`,
     `Recommended response: a ${dvCmps} cm/s ${dir} in-track burn`,
     `executed ${leadMin} min before closest approach.`,
     `This widens the miss to ${m.missAfterKm.toFixed(2)} km and lowers probability to`,

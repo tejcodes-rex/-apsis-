@@ -15,7 +15,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "APSIS — Autonomous Space Traffic Management",
+  title: "APSIS, Autonomous Space Traffic Management",
   description:
     "Real-time conjunction screening, collision-probability assessment, and autonomous avoidance maneuver planning for objects in Earth orbit. Built on live NORAD data and SGP4 propagation.",
   keywords: [

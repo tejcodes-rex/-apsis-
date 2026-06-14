@@ -1,12 +1,12 @@
 /**
  * Conjunction screening pipeline.
  *
- * Stage 1 — geometric sieve: discard any secondary whose radial shell cannot
+ * Stage 1, geometric sieve: discard any secondary whose radial shell cannot
  *   come within the gate of the primary's shell. This is an O(1) test per object
  *   and removes the overwhelming majority of the catalog before any expensive
  *   time propagation, which is what makes all-vs-one screening interactive.
- * Stage 2 — temporal search: march each survivor to find close approaches.
- * Stage 3 — probability: for each close approach, build the combined covariance
+ * Stage 2, temporal search: march each survivor to find close approaches.
+ * Stage 3, probability: for each close approach, build the combined covariance
  *   and evaluate Foster Pc.
  */
 import { R_EARTH, SCREENING_DISTANCE_GATE_KM, PC_ACTION_THRESHOLD } from "../astro/constants";

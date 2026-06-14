@@ -4,7 +4,7 @@
 
 ### Autonomous Space Traffic Management
 
-**Real-time conjunction screening · collision-probability assessment · autonomous avoidance-maneuver planning — on live NORAD data.**
+**Real-time conjunction screening · collision-probability assessment · autonomous avoidance-maneuver planning, on live NORAD data.**
 
 [Theme: Space &amp; Aerospace](#) · [FAR AWAY 2026](#)
 
@@ -17,8 +17,8 @@
 ## The problem
 
 There are more than 30,000 tracked objects in Earth orbit and millions of untracked
-fragments. Three events alone — the 2007 Fengyun-1C anti-satellite test, the 2009
-Iridium-33 / Cosmos-2251 collision, and the 2021 Cosmos-1408 ASAT test — created
+fragments. Three events alone, the 2007 Fengyun-1C anti-satellite test, the 2009
+Iridium-33 / Cosmos-2251 collision, and the 2021 Cosmos-1408 ASAT test, created
 thousands of debris fragments that are still crossing the busiest orbital shells at
 14 km/s. Every fragment is a bullet, and the population is growing toward a chain
 reaction (Kessler syndrome) that could make low Earth orbit unusable.
@@ -39,7 +39,7 @@ pipeline on a real catalog:
 3. **Screen** a protected asset against the whole catalog, or run an all-pairs
    spatial-hash sieve across an entire orbital shell, to find close approaches.
 4. **Assess** each close approach: time of closest approach, miss distance, and
-   **collision probability** using Foster's 2D method — the same approach NASA CARA
+   **collision probability** using Foster's 2D method, the same approach NASA CARA
    and ESA use operationally.
 5. **Decide and act**: when probability crosses the action threshold, an optimizer
    computes the **minimum-propellant avoidance maneuver** that drives the probability
@@ -47,7 +47,7 @@ pipeline on a real catalog:
 6. **Visualize** all of it on a real-time 3D mission-control globe.
 
 Everything is computed from first principles in the browser. Nothing in the demo is
-pre-rendered or faked — the conjunctions are real, found by re-running the screening
+pre-rendered or faked, the conjunctions are real, found by re-running the screening
 on live elements.
 
 ## Why this is hard to fake (and why the numbers are real)
@@ -65,7 +65,7 @@ on live elements.
 
 A representative real result from the bundled catalog:
 
-> **QIANFAN-168** (active satellite) × **FENGYUN 1C** debris — miss **0.31 km**,
+> **QIANFAN-168** (active satellite) × **FENGYUN 1C** debris, miss **0.31 km**,
 > relative speed **13.1 km/s**, collision probability **1.07 × 10⁻⁴** (above the
 > 1 × 10⁻⁴ action line). APSIS resolves it with a sub-m/s in-track burn.
 
@@ -78,11 +78,11 @@ A representative real result from the bundled catalog:
 │   (Dashboard,                                          Web Worker│
 │    3D Globe)  ◄─position buffers / results──────────────         │
 │                                                                  │
-│   3D Globe: Three.js — Earth, atmosphere shader, 8k-point        │
+│   3D Globe: Three.js, Earth, atmosphere shader, 8k-point        │
 │   GPU cloud, orbit paths, live maneuver arc                      │
 └──────────────────────────────────────────────────────────────────┘
                                   │
-            lib/  (pure, tested astrodynamics — no UI deps)
+            lib/  (pure, tested astrodynamics, no UI deps)
    ┌──────────────┬───────────────┬──────────────┬─────────────────┐
    │ astro/       │ conjunction/  │ maneuver/    │ math/           │
    │ sgp4, kepler │ screening,    │ optimizer,   │ matrix          │
@@ -122,7 +122,7 @@ Then:
 - Click an entry under **Predicted High-Energy Events** to load a real conjunction.
 - Click **Plan Avoidance Maneuver** to watch the autonomous planner solve it; the cyan
   arc on the globe is the recomputed post-burn trajectory.
-- Use **Run Global Scan** to screen the entire 700–900 km debris shell, all pairs.
+- Use **Run Global Scan** to screen the entire 700-900 km debris shell, all pairs.
 
 ### Other commands
 
@@ -141,7 +141,7 @@ Zustand · Tailwind · Vitest. No backend required; deploys as a static/edge app
 
 ## Hardware companion
 
-`hardware/` contains the reference design for the **APSIS Ground Node** — a
+`hardware/` contains the reference design for the **APSIS Ground Node**, a
 GPS-disciplined 137/435 MHz receiver that observes real satellite passes and feeds
 Doppler measurements back to refine orbit tracks, directly shrinking the covariance
 the screening uses. Schematic, RF analysis (system noise figure ≈ 2.3 dB), link
@@ -149,7 +149,7 @@ budget, BOM, and netlist are included.
 
 ## Roadmap
 
-- **Round 1 (now):** working platform — screening, probability, autonomous maneuver,
+- **Round 1 (now):** working platform, screening, probability, autonomous maneuver,
   3D ops view, validated engine.
 - **Round 2:** operator-supplied covariance (CDM ingest), multi-asset fleet protection,
   maneuver scheduling against the full conjunction set, ground-node PCB layout + gerbers.
@@ -160,7 +160,7 @@ budget, BOM, and netlist are included.
 
 - TLE/GP data carries no covariance, so APSIS uses a documented, age-growing
   uncertainty model (`covariance.ts`). It is an explicit, replaceable assumption, shown
-  in the UI — not a hidden fudge. Operator covariance drops straight in.
+  in the UI, not a hidden fudge. Operator covariance drops straight in.
 - Hard-body radii are per-class envelopes (published dimensions are not in the catalog).
 - The two-body post-burn propagation is used only for the short maneuver arc and is
   differenced against SGP4 to cancel model error to first order.
