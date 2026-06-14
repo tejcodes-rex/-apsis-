@@ -5,12 +5,23 @@ import { buildCatalog } from "../lib/astro/catalog";
 import { propagate, summarize, applyImpulse, tleEpochMs } from "../lib/astro/sgp4";
 import { keplerPropagate, specificEnergy, angularMomentum } from "../lib/astro/kepler";
 import { collisionProbability } from "../lib/conjunction/probability";
-import { eciCovariance } from "../lib/conjunction/covariance";
+import { eciCovariance, ricSigmas } from "../lib/conjunction/covariance";
 import { screenPrimary } from "../lib/conjunction/screening";
+import { screenAllPairs } from "../lib/conjunction/sieve";
 import { planAvoidance } from "../lib/maneuver/optimizer";
-import { norm, sub } from "../lib/astro/vec";
+import { ricBasis } from "../lib/astro/frames";
+import { norm, sub, dot, unit } from "../lib/astro/vec";
 import type { Mat3 } from "../lib/math/matrix";
-import type { SpaceObject } from "../lib/astro/types";
+import type { SpaceObject, Vec3 } from "../lib/astro/types";
+
+/** Local 3x3 * vec for the covariance-rotation reference test. */
+function mat3Vec(M: Mat3, v: Vec3): Vec3 {
+  return [
+    M[0] * v[0] + M[1] * v[1] + M[2] * v[2],
+    M[3] * v[0] + M[4] * v[1] + M[5] * v[2],
+    M[6] * v[0] + M[7] * v[1] + M[8] * v[2],
+  ];
+}
 
 const raw = JSON.parse(
   readFileSync(join(process.cwd(), "public", "data", "catalog.json"), "utf8"),
@@ -100,51 +111,123 @@ describe("Covariance model", () => {
   });
 });
 
-describe("End-to-end: screening + autonomous maneuver", () => {
-  // Build a guaranteed close approach by cloning the ISS orbit with a small
-  // along-track phase offset (a co-orbital lead/trail). This is a real, valid
-  // SGP4 scenario that exercises the full screen -> probability -> plan pipeline.
-  function clonePhaseOffset(base: SpaceObject, meanAnomalyDeltaDeg: number): SpaceObject {
-    // Mean anomaly occupies columns 44-51 (0-indexed 43-51) of TLE line 2.
-    const l2 = base.tle.line2;
-    const maStr = l2.slice(43, 51);
-    const ma = parseFloat(maStr);
-    let newMa = (ma + meanAnomalyDeltaDeg) % 360;
-    if (newMa < 0) newMa += 360;
-    const newMaStr = newMa.toFixed(4).padStart(8, " ");
-    const newL2 = l2.slice(0, 43) + newMaStr + l2.slice(51);
-    // Give it a distinct NORAD id so the screen treats it as a separate object.
-    const newL1 = base.tle.line1.slice(0, 2) + "99999" + base.tle.line1.slice(7);
-    const newL2b = newL2.slice(0, 2) + "99999" + newL2.slice(7);
-    return {
-      tle: {
-        ...base.tle,
-        noradId: 99999,
-        name: "DRILL TARGET",
-        line1: newL1,
-        line2: newL2b,
-      },
-      orbit: summarize({ ...base.tle, line1: newL1, line2: newL2b }),
-    };
-  }
+describe("Foster Pc reference value", () => {
+  it("matches the closed form for an isotropic, centered encounter", () => {
+    // For an isotropic 2D Gaussian centered on the hard-body disk, the closed
+    // form is Pc = 1 - exp(-R^2 / (2 sigma^2)). This pins the absolute value of
+    // the quadrature, not just its ordering.
+    const sigma = 0.5; // km
+    const cov: Mat3 = [sigma * sigma, 0, 0, 0, sigma * sigma, 0, 0, 0, sigma * sigma];
+    const R = 0.3; // km hard-body radius
+    const { pc } = collisionProbability([0, 0, 0], [0, 7.5, 0], cov, R);
+    const expected = 1 - Math.exp(-(R * R) / (2 * sigma * sigma));
+    expect(Math.abs(pc - expected)).toBeLessThan(0.005);
+  });
+});
 
-  it("finds the conjunction and the planner reduces collision probability", () => {
+describe("Covariance rotation correctness", () => {
+  it("places the dominant uncertainty axis exactly along in-track in ECI", () => {
+    // C_eci = Bᵀ diag(σ²) B must have the in-track unit vector as the eigenvector
+    // for the largest (in-track) eigenvalue. This is the single most attackable
+    // line of the covariance math, so verify C·I = σ_i² · I directly.
     const epoch = tleEpochMs(iss.tle);
-    // ~0.03 deg phase offset => a few km along-track separation.
-    const target = clonePhaseOffset(iss, 0.03);
-    const conjunctions = screenPrimary(iss, [iss, target], epoch, {
-      windowHours: 2,
-      gateKm: 50,
-    });
-    expect(conjunctions.length).toBeGreaterThan(0);
-    const top = conjunctions[0];
-    expect(top.missKm).toBeLessThan(50);
-    expect(top.pc).toBeGreaterThan(0);
+    const st = propagate(iss.tle, epoch)!;
+    const input = { ageDays: 1, regime: "LEO" as const };
+    const cov = eciCovariance(st, input);
+    const { I } = ricBasis(st);
+    const { si } = ricSigmas(input);
+    const Cv = mat3Vec(cov, I);
+    // C·I is parallel to I (eigenvector) ...
+    expect(Math.abs(dot(unit(Cv), I) - 1)).toBeLessThan(1e-9);
+    // ... with eigenvalue σ_i².
+    expect(Math.abs(norm(Cv) - si * si) / (si * si)).toBeLessThan(1e-6);
+  });
+});
 
-    const plan = planAvoidance(iss, target, top, epoch, { targetPc: top.pc / 100 });
+describe("End-to-end: real hypervelocity conjunction + autonomous maneuver", () => {
+  const primary = catalog.objects.find((o) => o.tle.name.includes("QIANFAN-168"));
+  const secondary = catalog.objects.find((o) => o.tle.name === "FENGYUN 1C");
+
+  it("has both real objects in the bundled catalog", () => {
+    expect(primary).toBeTruthy();
+    expect(secondary).toBeTruthy();
+  });
+
+  it("screens the real conjunction and the planner reduces a valid Foster Pc", () => {
+    if (!primary || !secondary) return;
+    const nowMs = Math.min(tleEpochMs(primary.tle), tleEpochMs(secondary.tle)) - 3600_000;
+    const conjunctions = screenPrimary(primary, [primary, secondary], nowMs, {
+      windowHours: 72,
+      gateKm: 25,
+    });
+    const conj = conjunctions.find((c) => c.secondaryId === secondary.tle.noradId);
+    expect(conj).toBeTruthy();
+    expect(conj!.fosterValid).toBe(true);
+    expect(conj!.relativeSpeedKmps).toBeGreaterThan(7);
+    expect(conj!.pc).toBeGreaterThan(1e-5);
+
+    const plan = planAvoidance(primary, secondary, conj!, nowMs, { targetPc: conj!.pc / 100 });
     expect(plan).toBeTruthy();
-    expect(plan!.pcAfter).toBeLessThanOrEqual(top.pc);
-    expect(plan!.missAfterKm).toBeGreaterThan(top.missKm);
+    expect(plan!.pcAfter).toBeLessThanOrEqual(conj!.pc);
+    expect(plan!.missAfterKm).toBeGreaterThan(conj!.missKm);
     expect(plan!.deltaVmagMps).toBeGreaterThan(0);
+  });
+
+  it("the all-pairs sieve also finds the real conjunction (not just the marcher path)", () => {
+    if (!primary || !secondary) return;
+    // A small set: the two objects plus nearby-altitude neighbours, so the
+    // spatial-hash sieve runs fast but still has a realistic binning set.
+    const targetAlt = (primary.orbit.apogeeKm + primary.orbit.perigeeKm) / 2;
+    const neighbours = catalog.objects
+      .filter((o) => o.orbit.regime === "LEO" && o.tle.noradId !== primary.tle.noradId && o.tle.noradId !== secondary.tle.noradId)
+      .map((o) => ({ o, d: Math.abs((o.orbit.apogeeKm + o.orbit.perigeeKm) / 2 - targetAlt) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 40)
+      .map((x) => x.o);
+    const set = [primary, secondary, ...neighbours];
+    // Locate the real TCA via the marcher path, then run the sieve over a tight
+    // window around it: this isolates the sieve's binning + refinement (fast) and
+    // proves it finds the same conjunction the direct marcher does.
+    const anchor = Math.min(tleEpochMs(primary.tle), tleEpochMs(secondary.tle)) - 3600_000;
+    const direct = screenPrimary(primary, [primary, secondary], anchor, { windowHours: 72, gateKm: 25 });
+    const known = direct.find((c) => c.secondaryId === secondary.tle.noradId)!;
+    expect(known).toBeTruthy();
+    const found = screenAllPairs(set, known.tcaMs - 3600_000, {
+      windowHours: 2,
+      gateKm: 8,
+      stepSec: 18,
+    });
+    const pair = found.find(
+      (c) =>
+        (c.primaryId === primary.tle.noradId && c.secondaryId === secondary.tle.noradId) ||
+        (c.primaryId === secondary.tle.noradId && c.secondaryId === primary.tle.noradId),
+    );
+    expect(pair).toBeTruthy();
+    expect(pair!.fosterValid).toBe(true);
+    expect(pair!.relativeSpeedKmps).toBeGreaterThan(7);
+  }, 30000);
+
+  it("flags a slow co-orbital pair as not a Foster collision case and refuses to maneuver", () => {
+    // Clone the ISS with a tiny along-track phase offset: a co-orbital trail with
+    // near-zero relative speed. The engine must mark this Foster-invalid and the
+    // planner must decline it rather than report a meaningless avoidance burn.
+    const l2 = iss.tle.line2;
+    const ma = parseFloat(l2.slice(43, 51));
+    const newMa = ((ma + 0.03) % 360 + 360) % 360;
+    const newL2 = (l2.slice(0, 43) + newMa.toFixed(4).padStart(8, " ") + l2.slice(51));
+    const l1b = iss.tle.line1.slice(0, 2) + "99999" + iss.tle.line1.slice(7);
+    const l2b = newL2.slice(0, 2) + "99999" + newL2.slice(7);
+    const target: SpaceObject = {
+      tle: { ...iss.tle, noradId: 99999, name: "DRILL TARGET", line1: l1b, line2: l2b },
+      orbit: summarize({ ...iss.tle, line1: l1b, line2: l2b }),
+    };
+    const epoch = tleEpochMs(iss.tle);
+    const conjunctions = screenPrimary(iss, [iss, target], epoch, { windowHours: 2, gateKm: 50 });
+    expect(conjunctions.length).toBeGreaterThan(0);
+    const c = conjunctions[0];
+    expect(c.relativeSpeedKmps).toBeLessThan(0.5);
+    expect(c.fosterValid).toBe(false);
+    expect(c.severity).toBe("INFO");
+    expect(planAvoidance(iss, target, c, epoch)).toBeNull();
   });
 });

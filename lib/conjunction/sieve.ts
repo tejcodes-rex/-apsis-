@@ -19,6 +19,28 @@ import { hardBodyRadiusKm, severityFromPc } from "./screening";
 import { findCloseApproaches } from "./tca";
 import type { Mat3 } from "../math/matrix";
 import { sub } from "../astro/vec";
+import { MIN_FOSTER_REL_SPEED_KMPS, MU_EARTH, R_EARTH } from "../astro/constants";
+
+/**
+ * Physical upper bound on the relative speed of any pair in a set, km/s. The
+ * fastest an object moves is at perigee (vis-viva), and the largest closing
+ * speed is a head-on encounter, so 2 x max perigee speed (with a small margin)
+ * bounds every pair. Sizing the sieve neighbourhood with this guarantees no
+ * hypervelocity conjunction can slip between time samples, rather than trusting
+ * a hard-coded ceiling that a fast eccentric crosser could exceed.
+ */
+function maxRelativeSpeedKmps(objects: SpaceObject[]): number {
+  let vMax = 7.9; // floor at circular LEO speed
+  for (const o of objects) {
+    const rp = o.orbit.perigeeKm + R_EARTH;
+    const ra = o.orbit.apogeeKm + R_EARTH;
+    if (rp <= 0) continue;
+    const a = (rp + ra) / 2;
+    const vp = Math.sqrt(Math.max(0, MU_EARTH * (2 / rp - 1 / a)));
+    if (isFinite(vp) && vp > vMax) vMax = vp;
+  }
+  return 2 * vMax * 1.1; // head-on, plus 10% margin
+}
 
 export interface SieveOptions {
   windowHours?: number;
@@ -30,11 +52,11 @@ export interface SieveOptions {
   onProgress?: (fraction: number, phase: string) => void;
 }
 
-type PairKey = number; // packed (minId, maxId)
+type PairKey = string; // "minId_maxId" — string key avoids any id-range packing limit
 function packPair(a: number, b: number): PairKey {
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);
-  return lo * 100000 + hi; // ids well under 1e5 in practice; collision-free here
+  return `${lo}_${hi}`;
 }
 
 /** Find candidate pairs that ever share a spatial neighbourhood. */
@@ -115,7 +137,9 @@ export function screenAllPairs(
     stepSec: options.stepSec ?? 20,
     gateKm: options.gateKm ?? 10,
     cellKm: options.cellKm ?? 60,
-    maxRelSpeedKmps: options.maxRelSpeedKmps ?? 16,
+    // Derive the relative-speed bound from the actual screened set so the
+    // neighbourhood is large enough for the fastest possible pair.
+    maxRelSpeedKmps: options.maxRelSpeedKmps ?? maxRelativeSpeedKmps(objects),
   };
   const byId = new Map(objects.map((obj) => [obj.tle.noradId, obj]));
   const candidates = gatherCandidates(objects, nowMs, o, options.onProgress);
@@ -124,8 +148,7 @@ export function screenAllPairs(
   const tEnd = nowMs + o.windowHours * 3600_000;
   let done = 0;
   for (const key of candidates) {
-    const hi = key % 100000;
-    const lo = (key - hi) / 100000;
+    const [lo, hi] = key.split("_").map(Number);
     const a = byId.get(lo);
     const b = byId.get(hi);
     done++;
@@ -148,6 +171,7 @@ export function screenAllPairs(
       // events and live re-screening report identical probabilities.
       const hbr = hardBodyRadiusKm(a.tle.type) + hardBodyRadiusKm(b.tle.type);
       const { pc } = collisionProbability(rRel, vRel, cov, hbr);
+      const fosterValid = ca.relativeSpeedKmps >= MIN_FOSTER_REL_SPEED_KMPS;
       conjunctions.push({
         primaryId: a.tle.noradId,
         secondaryId: b.tle.noradId,
@@ -158,7 +182,8 @@ export function screenAllPairs(
         relativeSpeedKmps: ca.relativeSpeedKmps,
         hardBodyRadiusKm: hbr,
         pc,
-        severity: severityFromPc(pc),
+        fosterValid,
+        severity: severityFromPc(pc, fosterValid),
       });
     }
     if (options.onProgress && done % 20 === 0) {
@@ -168,12 +193,13 @@ export function screenAllPairs(
   if (options.onProgress) options.onProgress(1, "done");
   // De-dup (a pair can yield multiple approaches): keep the riskiest per pair.
   const bestByPair = new Map<PairKey, Conjunction>();
+  const rank = (c: Conjunction) => (c.fosterValid ? c.pc : -1);
   for (const c of conjunctions) {
     const k = packPair(c.primaryId, c.secondaryId);
     const cur = bestByPair.get(k);
-    if (!cur || c.pc > cur.pc) bestByPair.set(k, c);
+    if (!cur || rank(c) > rank(cur)) bestByPair.set(k, c);
   }
-  return Array.from(bestByPair.values()).sort((x, y) => y.pc - x.pc);
+  return Array.from(bestByPair.values()).sort((x, y) => rank(y) - rank(x));
 }
 
 function sumCov(A: Mat3, B: Mat3): Mat3 {

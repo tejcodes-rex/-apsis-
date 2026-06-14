@@ -43,6 +43,10 @@ and ESA.
 
 - During a short encounter, relative motion is approximately linear, so we collapse
   the problem onto the 2D **encounter plane** perpendicular to the relative velocity.
+  This assumption only holds at high relative speed, so APSIS gates Foster Pc on
+  relative speed (`MIN_FOSTER_REL_SPEED_KMPS`): slow co-orbital pairs (formation
+  flying, station-keeping) are flagged "Foster N/A" rather than given a meaningless
+  2D probability, and they never raise an alert.
 - The combined position covariance projects into that plane as a 2×2 Gaussian.
 - A collision is the event that the relative position lands inside the combined
   hard-body disk, so
@@ -105,10 +109,14 @@ Propellant is reported from the rocket equation for a reference 500 kg / 220 s-I
 - the ISS sits in a correct LEO orbit (perigee, apogee, inclination bounds);
 - the two-body propagator conserves energy and angular momentum to 1 part in 10⁶ and
   closes one full revolution to under 5 cm;
-- Foster Pc is monotonic in miss distance and scales correctly with the covariance;
+- Foster Pc matches the closed form `Pc = 1 - exp(-R²/2σ²)` for an isotropic centered
+  encounter (an absolute-value check, not just ordering);
+- the covariance rotation is exact: `C·I = σ_i² · I`, i.e. the in-track unit vector is
+  the eigenvector of the largest uncertainty in ECI;
 - the covariance trace grows with element age;
-- end to end, screening finds an injected conjunction and the planner reduces Pc while
-  widening the miss.
+- end to end, screening the real QIANFAN-168 vs FENGYUN-1C conjunction yields a valid
+  Foster Pc and the planner reduces it while widening the miss;
+- a slow co-orbital pair is correctly flagged Foster-invalid and the planner declines it.
 
 ## 6. Known limitations (and the upgrade path)
 

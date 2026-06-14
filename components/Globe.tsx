@@ -202,7 +202,7 @@ export default function Globe() {
         setLine(secondaryOrbit, new Float32Array(0));
       }
 
-      if (s.maneuver) {
+      if (s.maneuver && conj) {
         const burnMs = conj.tcaMs - s.maneuver.leadTimeSec * 1000;
         const arc = sampleManeuveredArc(
           primaryObj,

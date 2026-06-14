@@ -34,19 +34,22 @@ export const DEG2RAD = Math.PI / 180;
 export const RAD2DEG = 180 / Math.PI;
 
 /**
- * Default hard-body radius envelope, km. When two objects lack published
- * dimensions we model each as a sphere and combine radii. 0.02 km (20 m) is a
- * conservative envelope that covers most catalogued payloads plus rocket bodies.
- */
-export const DEFAULT_HARD_BODY_RADIUS_KM = 0.02;
-
-/**
  * Operational collision-probability threshold. A widely used industry red line
  * for crewed and high-value assets is 1e-4; we surface anything above 1e-7 for
  * situational awareness and trigger autonomous response above the red line.
  */
 export const PC_ALERT_THRESHOLD = 1e-7;
 export const PC_ACTION_THRESHOLD = 1e-4;
+
+/**
+ * Minimum relative speed for the Foster 2D model to apply, km/s. Foster assumes
+ * a short, effectively straight-line encounter so the geometry collapses onto a
+ * static 2D Gaussian in the encounter plane. Below this speed the pair is
+ * co-orbital (formation flying / station-keeping), the encounter is long, the
+ * relative trajectory curves through the covariance, and a 2D Foster Pc is not
+ * physically meaningful. We flag those rather than report a misleading number.
+ */
+export const MIN_FOSTER_REL_SPEED_KMPS = 0.5;
 
 /** Screening volume gate: only refine pairs whose coarse miss is below this, km. */
 export const SCREENING_DISTANCE_GATE_KM = 25;

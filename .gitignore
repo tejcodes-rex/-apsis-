@@ -39,3 +39,6 @@ yarn-error.log*
 
 # editor/agent session state
 .claude/
+
+# generated demo video workspace (uploaded externally, not committed)
+/video

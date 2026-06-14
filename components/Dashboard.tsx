@@ -293,6 +293,7 @@ function WatchList() {
   const selected = useApp((s) => s.selectedConjunctionIndex);
   const select = useApp((s) => s.selectConjunction);
   const screening = useApp((s) => s.screening);
+  const simTimeMs = useApp((s) => s.simTimeMs);
 
   return (
     <Panel title={`Conjunction Watchlist · ${conjunctions.length}`}>
@@ -319,22 +320,18 @@ function WatchList() {
                 <span className="readout text-[11px] text-white/85">{c.secondaryName}</span>
               </div>
               <span className="readout text-[11px]" style={{ color: SEVERITY_COLOR[c.severity] }}>
-                {fmtPc(c.pc)}
+                {c.fosterValid === false ? "co-orbital" : fmtPc(c.pc)}
               </span>
             </div>
             <div className="readout mt-0.5 pl-4 text-[10px] text-white/40">
-              {fmtKm(c.missKm)} miss · {c.relativeSpeedKmps.toFixed(1)} km/s · T{fmtTcaCountdown(c)}
+              {fmtKm(c.missKm)} miss · {c.relativeSpeedKmps.toFixed(1)} km/s · T
+              {(c.tcaMs - simTimeMs >= 0 ? "+" : "") + fmtDuration(c.tcaMs - simTimeMs)}
             </div>
           </button>
         ))}
       </div>
     </Panel>
   );
-}
-
-function fmtTcaCountdown(c: Conjunction) {
-  const dt = c.tcaMs - useApp.getState().simTimeMs;
-  return (dt >= 0 ? "+" : "") + fmtDuration(dt);
 }
 
 function ConjunctionDetail() {
@@ -357,16 +354,25 @@ function ConjunctionDetail() {
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Metric label="COLLISION PROBABILITY" value={fmtPc(c.pc)} accent={SEVERITY_COLOR[c.severity]} big />
+        <Metric
+          label="COLLISION PROBABILITY"
+          value={c.fosterValid === false ? "N/A" : fmtPc(c.pc)}
+          accent={SEVERITY_COLOR[c.severity]}
+          big
+        />
         <Metric label="MISS DISTANCE" value={fmtKm(c.missKm)} />
         <Metric label="RELATIVE SPEED" value={`${c.relativeSpeedKmps.toFixed(2)} km/s`} />
         <Metric label="TIME TO TCA" value={fmtDuration(dt)} />
         <Metric label="HARD-BODY RADIUS" value={`${(c.hardBodyRadiusKm * 1000).toFixed(0)} m`} />
-        <Metric
-          label="ENCOUNTER"
-          value={c.relativeSpeedKmps > 5 ? "HYPERVELOCITY" : "CO-ORBITAL"}
-        />
+        <Metric label="ENCOUNTER" value={encounterClass(c.relativeSpeedKmps)} />
       </div>
+      {c.fosterValid === false && (
+        <div className="readout mt-2 text-[10px] leading-relaxed text-signal-watch/90">
+          Co-orbital encounter (relative speed below 0.5 km/s). The Foster 2D model assumes a
+          short hypervelocity pass, so a 2D collision probability is not physically meaningful
+          here and is withheld.
+        </div>
+      )}
       <button
         data-testid="jump-tca"
         onClick={() => {
@@ -414,21 +420,23 @@ function ManeuverConsole() {
   const c = conjunctions[idx];
   if (!c) return null;
 
-  const actionable = c.pc >= 1e-5;
+  const actionable = c.fosterValid !== false && c.pc >= 1e-5;
 
   return (
     <Panel title="Autonomous Response" accent="#7ee4ff">
       {!maneuver && (
         <>
           <div className="readout text-[11px] leading-relaxed text-white/55">
-            {actionable
-              ? "Collision probability exceeds the response threshold. The planner will compute the minimum-propellant avoidance maneuver."
-              : "Probability is below the action threshold. A precautionary maneuver can still be computed for planning."}
+            {c.fosterValid === false
+              ? "This is a slow co-orbital encounter, not a hypervelocity collision risk. Avoidance maneuver planning does not apply."
+              : actionable
+                ? "Collision probability exceeds the response threshold. The planner will compute the minimum-propellant avoidance maneuver."
+                : "Probability is below the action threshold. A precautionary maneuver can still be computed for planning."}
           </div>
           <button
             data-testid="plan-maneuver"
             onClick={planSelected}
-            disabled={planning}
+            disabled={planning || c.fosterValid === false}
             className="btn btn-danger mt-3 w-full"
           >
             {planning ? "Optimizing maneuver..." : "▶ Plan Avoidance Maneuver"}
@@ -547,6 +555,12 @@ function severityOf(pc: number): "INFO" | "WATCH" | "WARNING" | "CRITICAL" {
   if (pc >= 1e-5) return "WARNING";
   if (pc >= 1e-7) return "WATCH";
   return "INFO";
+}
+
+function encounterClass(relSpeedKmps: number): string {
+  if (relSpeedKmps >= 7) return "HYPERVELOCITY";
+  if (relSpeedKmps >= 0.5) return "MODERATE";
+  return "CO-ORBITAL";
 }
 
 function GlobalScanPanel() {

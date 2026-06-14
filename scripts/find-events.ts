@@ -42,7 +42,6 @@ const conjunctions = screenAllPairs(shell, nowMs, {
   stepSec: 18,
   gateKm: 8,
   cellKm: 70,
-  maxRelSpeedKmps: 16,
   onProgress: (f, phase) => {
     if (Math.round(f * 100) % 10 === 0) process.stdout.write(`\r  ${phase}: ${(f * 100).toFixed(0)}%   `);
   },
@@ -50,7 +49,10 @@ const conjunctions = screenAllPairs(shell, nowMs, {
 
 console.log(`\nScreened in ${((Date.now() - t0) / 1000).toFixed(1)}s, ${conjunctions.length} approaches found`);
 
-const top = conjunctions.slice(0, 40);
+// Only feature genuine hypervelocity conjunctions, where the Foster 2D Pc is
+// physically valid. Slow co-orbital pairs (formation flying / station-keeping)
+// are excluded from the featured set.
+const top = conjunctions.filter((c) => c.fosterValid).slice(0, 40);
 for (const c of top.slice(0, 10)) {
   console.log(
     `  ${c.missKm.toFixed(3)} km  Pc=${c.pc.toExponential(2)}  ${c.relativeSpeedKmps.toFixed(1)} km/s  ` +

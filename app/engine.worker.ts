@@ -38,7 +38,7 @@ type Req =
       targetPc?: number;
       reqId: number;
     }
-  | { kind: "screenAll"; minAltKm: number; maxAltKm: number; windowHours: number; reqId: number }
+  | { kind: "screenAll"; minAltKm: number; maxAltKm: number; windowHours: number; nowMs?: number; reqId: number }
   | {
       kind: "screenFleet";
       operatorTags: string[];
@@ -115,35 +115,42 @@ self.onmessage = async (e: MessageEvent<Req>) => {
   }
 
   if (msg.kind === "screen") {
+    // Always post a terminal message (even empty) so the UI never gets stuck in
+    // the "screening" state if the asset is missing or the call throws.
+    let conjunctions: Conjunction[] = [];
     const primary = catalog.byId.get(msg.primaryId);
-    if (!primary) return;
-    const conjunctions = screenPrimary(primary, catalog.objects, msg.nowMs, {
-      windowHours: msg.windowHours,
-      gateKm: msg.gateKm,
-    });
+    if (primary) {
+      try {
+        conjunctions = screenPrimary(primary, catalog.objects, msg.nowMs, {
+          windowHours: msg.windowHours,
+          gateKm: msg.gateKm,
+        });
+      } catch {
+        conjunctions = [];
+      }
+    }
     (self as unknown as Worker).postMessage({ kind: "screen:done", reqId: msg.reqId, conjunctions });
     return;
   }
 
   if (msg.kind === "plan") {
+    let maneuver = null;
     const primary = catalog.byId.get(msg.primaryId);
     const secondary = catalog.byId.get(msg.secondaryId);
-    if (!primary || !secondary) return;
-    const maneuver = planAvoidance(primary, secondary, msg.conjunction, msg.nowMs, {
-      targetPc: msg.targetPc,
-    });
+    if (primary && secondary) {
+      try {
+        maneuver = planAvoidance(primary, secondary, msg.conjunction, msg.nowMs, {
+          targetPc: msg.targetPc,
+        });
+      } catch {
+        maneuver = null;
+      }
+    }
     (self as unknown as Worker).postMessage({ kind: "plan:done", reqId: msg.reqId, maneuver });
     return;
   }
 
   if (msg.kind === "screenFleet") {
-    const tags = new Set(msg.operatorTags);
-    // Spread the sample across the fleet rather than taking the first N in id
-    // order, so the board reflects the whole constellation.
-    const fleet = catalog.objects.filter((o) => o.tle.type === "PAYLOAD" && tags.has(o.tle.operator ?? ""));
-    const step = Math.max(1, Math.floor(fleet.length / msg.maxAssets));
-    const sample = fleet.filter((_, i) => i % step === 0).slice(0, msg.maxAssets);
-
     const board: {
       assetId: number;
       name: string;
@@ -151,48 +158,70 @@ self.onmessage = async (e: MessageEvent<Req>) => {
       count: number;
       worstSecondary: string;
     }[] = [];
-    for (let i = 0; i < sample.length; i++) {
-      const asset = sample[i];
-      const conjunctions = screenPrimary(asset, catalog.objects, msg.nowMs, {
-        windowHours: msg.windowHours,
-        gateKm: 20,
-      });
-      const worst = conjunctions[0];
-      board.push({
-        assetId: asset.tle.noradId,
-        name: asset.tle.name,
-        worstPc: worst?.pc ?? 0,
-        count: conjunctions.length,
-        worstSecondary: worst?.secondaryName ?? "none",
-      });
-      (self as unknown as Worker).postMessage({
-        kind: "screenFleet:progress",
-        reqId: msg.reqId,
-        fraction: (i + 1) / sample.length,
-      });
+    let fleetSize = 0;
+    let sampled = 0;
+    try {
+      const tags = new Set(msg.operatorTags);
+      // Spread the sample across the fleet rather than taking the first N in id
+      // order, so the board reflects the whole constellation.
+      const fleet = catalog.objects.filter((o) => o.tle.type === "PAYLOAD" && tags.has(o.tle.operator ?? ""));
+      fleetSize = fleet.length;
+      const step = Math.max(1, Math.floor(fleet.length / msg.maxAssets));
+      const sample = fleet.filter((_, i) => i % step === 0).slice(0, msg.maxAssets);
+      sampled = sample.length;
+      for (let i = 0; i < sample.length; i++) {
+        const asset = sample[i];
+        const conjunctions = screenPrimary(asset, catalog.objects, msg.nowMs, {
+          windowHours: msg.windowHours,
+          gateKm: 20,
+        });
+        const worst = conjunctions[0];
+        board.push({
+          assetId: asset.tle.noradId,
+          name: asset.tle.name,
+          // Only a valid Foster conjunction counts as a real risk score.
+          worstPc: worst && worst.fosterValid ? worst.pc : 0,
+          count: conjunctions.length,
+          worstSecondary: worst?.secondaryName ?? "none",
+        });
+        (self as unknown as Worker).postMessage({
+          kind: "screenFleet:progress",
+          reqId: msg.reqId,
+          fraction: (i + 1) / sample.length,
+        });
+      }
+      board.sort((a, b) => b.worstPc - a.worstPc);
+    } catch {
+      /* fall through and post whatever we have */
     }
-    board.sort((a, b) => b.worstPc - a.worstPc);
     (self as unknown as Worker).postMessage({
       kind: "screenFleet:done",
       reqId: msg.reqId,
       board,
-      fleetSize: fleet.length,
-      sampled: sample.length,
+      fleetSize,
+      sampled,
     });
     return;
   }
 
   if (msg.kind === "screenAll") {
-    const shell = catalog.objects.filter((o) => {
-      const a = (o.orbit.apogeeKm + o.orbit.perigeeKm) / 2;
-      return a >= msg.minAltKm && a <= msg.maxAltKm;
-    });
-    const conjunctions = screenAllPairs(shell, Date.now(), {
-      windowHours: msg.windowHours,
-      onProgress: (fraction, phase) =>
-        (self as unknown as Worker).postMessage({ kind: "screenAll:progress", reqId: msg.reqId, fraction, phase }),
-    });
-    (self as unknown as Worker).postMessage({ kind: "screenAll:done", reqId: msg.reqId, conjunctions, shellCount: shell.length });
+    let conjunctions: Conjunction[] = [];
+    let shellCount = 0;
+    try {
+      const shell = catalog.objects.filter((o) => {
+        const a = (o.orbit.apogeeKm + o.orbit.perigeeKm) / 2;
+        return a >= msg.minAltKm && a <= msg.maxAltKm;
+      });
+      shellCount = shell.length;
+      conjunctions = screenAllPairs(shell, msg.nowMs ?? Date.now(), {
+        windowHours: msg.windowHours,
+        onProgress: (fraction, phase) =>
+          (self as unknown as Worker).postMessage({ kind: "screenAll:progress", reqId: msg.reqId, fraction, phase }),
+      });
+    } catch {
+      conjunctions = [];
+    }
+    (self as unknown as Worker).postMessage({ kind: "screenAll:done", reqId: msg.reqId, conjunctions, shellCount });
     return;
   }
 };

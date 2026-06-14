@@ -34,11 +34,12 @@ export default function BplanePanel() {
     }
     let cancelled = false;
     let tries = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const attempt = () => {
       if (cancelled) return;
       if (!clientCatalogReady() && tries < 40) {
         tries++;
-        setTimeout(attempt, 150);
+        timer = setTimeout(attempt, 150);
         return;
       }
       const primary = getClientObject(c.primaryId);
@@ -63,6 +64,7 @@ export default function BplanePanel() {
     attempt();
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [c?.primaryId, c?.secondaryId, c?.tcaMs]);
 
@@ -194,7 +196,11 @@ export default function BplanePanel() {
     <section className="panel p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="eyebrow">Encounter Plane (B-plane)</span>
-        {analysis && <span className="readout text-[10px] text-instrument-soft">Pc {fmtPc(analysis.pc)}</span>}
+        {analysis && (
+          <span className="readout text-[10px] text-instrument-soft">
+            Pc {c.fosterValid === false ? "N/A" : fmtPc(analysis.pc)}
+          </span>
+        )}
       </div>
       <div className="relative">
         <canvas ref={canvasRef} className="h-[190px] w-full rounded-md bg-vacuum-900/60" />

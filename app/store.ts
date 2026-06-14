@@ -71,6 +71,8 @@ interface AppState {
 
 let reqCounter = 1;
 let lastPropagateReq = 0;
+let lastScreenReq = 0;
+let lastPlanSecondary = -1;
 
 export const useApp = create<AppState>((set, get) => ({
   worker: null,
@@ -128,6 +130,9 @@ export const useApp = create<AppState>((set, get) => ({
           break;
         }
         case "screen:done": {
+          // Drop a stale screen result so a slow earlier request cannot overwrite
+          // the watchlist for a newer protected asset (rapid selection race).
+          if (m.reqId < lastScreenReq) break;
           const focus = get().pendingFocusSecondary;
           let selIdx = 0;
           if (focus != null) {
@@ -144,6 +149,13 @@ export const useApp = create<AppState>((set, get) => ({
           break;
         }
         case "plan:done": {
+          // Ignore a maneuver that arrives after the selection moved on, so we
+          // never show one conjunction's burn against a different conjunction.
+          const cur = get().conjunctions[get().selectedConjunctionIndex];
+          if (!cur || cur.secondaryId !== lastPlanSecondary) {
+            set({ planning: false });
+            break;
+          }
           set({ planning: false, maneuver: m.maneuver });
           break;
         }
@@ -230,13 +242,15 @@ export const useApp = create<AppState>((set, get) => ({
     const { worker, primaryId, baseTimeMs } = get();
     if (!worker || primaryId == null) return;
     set({ screening: true, conjunctions: [], maneuver: null });
+    const reqId = reqCounter++;
+    lastScreenReq = reqId;
     worker.postMessage({
       kind: "screen",
       primaryId,
       nowMs: baseTimeMs,
       windowHours: 48,
       gateKm: 25,
-      reqId: reqCounter++,
+      reqId,
     });
   },
 
@@ -247,6 +261,7 @@ export const useApp = create<AppState>((set, get) => ({
     const c = conjunctions[selectedConjunctionIndex];
     if (!worker || !c || primaryId == null) return;
     set({ planning: true, maneuver: null });
+    lastPlanSecondary = c.secondaryId;
     // Manual planning always yields a result: drive probability below the safe
     // line if it is above it, otherwise compute a precautionary burn that cuts
     // the current probability by two orders of magnitude.
@@ -275,10 +290,17 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   runGlobalScan: (minAltKm, maxAltKm, windowHours) => {
-    const { worker } = get();
+    const { worker, baseTimeMs } = get();
     if (!worker) return;
     set({ globalScan: { running: true, fraction: 0, phase: "starting", results: [] } });
-    worker.postMessage({ kind: "screenAll", minAltKm, maxAltKm, windowHours, reqId: reqCounter++ });
+    worker.postMessage({
+      kind: "screenAll",
+      minAltKm,
+      maxAltKm,
+      windowHours,
+      nowMs: baseTimeMs,
+      reqId: reqCounter++,
+    });
   },
 
   runFleetScan: (operator, operatorTags, maxAssets, windowHours) => {

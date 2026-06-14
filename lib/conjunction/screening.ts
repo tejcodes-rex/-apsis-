@@ -9,28 +9,43 @@
  * Stage 3, probability: for each close approach, build the combined covariance
  *   and evaluate Foster Pc.
  */
-import { R_EARTH, SCREENING_DISTANCE_GATE_KM, PC_ACTION_THRESHOLD } from "../astro/constants";
+import {
+  R_EARTH,
+  SCREENING_DISTANCE_GATE_KM,
+  PC_ACTION_THRESHOLD,
+  MIN_FOSTER_REL_SPEED_KMPS,
+} from "../astro/constants";
 import { tleEpochMs } from "../astro/sgp4";
 import type { Conjunction, Severity, SpaceObject, TLE } from "../astro/types";
 import { eciCovariance, elementAgeDays } from "./covariance";
 import { collisionProbability } from "./probability";
 import { findCloseApproaches } from "./tca";
 
-/** Per-class hard-body radius estimate, km (no published sizes in TLE data). */
+/**
+ * Per-class hard-body radius estimate, km. TLE/GP data carries no dimensions, so
+ * we model each object as a sphere by class and the integral uses the combined
+ * (summed) radius. These are deliberately conservative characteristic radii; a
+ * payload-vs-payload pass therefore uses a ~10 m combined hard-body, in line with
+ * operational screening practice. Replacing these with registry or RCS-derived
+ * sizes is a drop-in change to this one function.
+ */
 export function hardBodyRadiusKm(type: TLE["type"]): number {
   switch (type) {
     case "PAYLOAD":
-      return 0.005; // ~5 m envelope
+      return 0.005; // ~5 m characteristic radius
     case "ROCKET_BODY":
-      return 0.008; // ~8 m envelope
+      return 0.008; // ~8 m (spent upper stages are large)
     case "DEBRIS":
-      return 0.001; // ~1 m fragment
+      return 0.001; // ~1 m catalogued fragment
     default:
       return 0.003;
   }
 }
 
-export function severityFromPc(pc: number): Severity {
+export function severityFromPc(pc: number, fosterValid = true): Severity {
+  // A slow co-orbital encounter has no meaningful Foster Pc, so it never raises
+  // an alert regardless of the (invalid) number.
+  if (!fosterValid) return "INFO";
   if (pc >= PC_ACTION_THRESHOLD) return "CRITICAL";
   if (pc >= 1e-5) return "WARNING";
   if (pc >= 1e-7) return "WATCH";
@@ -113,6 +128,7 @@ export function screenPrimary(
       ];
       const hbr = hardBodyRadiusKm(primary.tle.type) + hardBodyRadiusKm(sec.tle.type);
       const { pc } = collisionProbability(rRel, vRel, covCombined, hbr);
+      const fosterValid = ca.relativeSpeedKmps >= MIN_FOSTER_REL_SPEED_KMPS;
 
       conjunctions.push({
         primaryId: primary.tle.noradId,
@@ -124,13 +140,20 @@ export function screenPrimary(
         relativeSpeedKmps: ca.relativeSpeedKmps,
         hardBodyRadiusKm: hbr,
         pc,
-        severity: severityFromPc(pc),
+        fosterValid,
+        severity: severityFromPc(pc, fosterValid),
       });
     }
   }
 
   if (opts.onProgress) opts.onProgress(1);
-  return conjunctions.sort((a, b) => b.pc - a.pc);
+  // Rank by collision probability, but slow co-orbital encounters (no valid
+  // Foster Pc) always sink below genuine hypervelocity conjunctions.
+  return conjunctions.sort((a, b) => rankPc(b) - rankPc(a));
+}
+
+function rankPc(c: Conjunction): number {
+  return c.fosterValid ? c.pc : -1;
 }
 
 /** Element-wise sum of two 3x3 matrices (covariance addition). */

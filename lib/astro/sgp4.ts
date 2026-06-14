@@ -42,6 +42,13 @@ export function propagate(tle: TLE, epochMs: number): StateVector | null {
   const p = pv.position as { x: number; y: number; z: number };
   const v = pv.velocity as { x: number; y: number; z: number };
   if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.z)) return null;
+  if (!isFinite(v.x) || !isFinite(v.y) || !isFinite(v.z)) return null;
+  // Reject physically impossible states: an object propagated below the Earth's
+  // surface has decayed/reentered (SGP4 does not always flag this), and a radius
+  // beyond deep cislunar space indicates a diverged solution. Either way the
+  // state is not usable for screening or display, so we drop it cleanly.
+  const r2 = p.x * p.x + p.y * p.y + p.z * p.z;
+  if (r2 < 6200 * 6200 || r2 > 600000 * 600000) return null;
   return {
     epochMs,
     position: [p.x, p.y, p.z],

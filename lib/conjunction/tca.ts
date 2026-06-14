@@ -86,13 +86,17 @@ export function findCloseApproaches(
   gateKm: number,
   opts: { minStepSec?: number; maxStepSec?: number } = {},
 ): CloseApproach[] {
-  const minStep = (opts.minStepSec ?? 2) * 1000;
+  // A small floor so a deep, fast dip inside the gate is still resolved: at
+  // ~15 km/s a sub-km miss is traversed in well under a second, so the step must
+  // be able to shrink to a fraction of a second near closest approach.
+  const minStep = (opts.minStepSec ?? 0.4) * 1000;
   const maxStep = (opts.maxStepSec ?? 120) * 1000;
   const results: CloseApproach[] = [];
 
   let t = tStartMs;
   let prev = relDistance(primary, secondary, t);
   let prevT = t;
+  let prevPrevT = t; // the sample before `prev`, used to bracket a detected min
   let descending = false;
 
   while (t < tEndMs) {
@@ -100,7 +104,9 @@ export function findCloseApproaches(
     if (cur && prev) {
       // Detect a local minimum: distance was decreasing, now increasing.
       if (cur.d > prev.d && descending && prev.d < gateKm * 2) {
-        const refined = refineMinimum(primary, secondary, prevT - maxStep, t);
+        // Bracket the minimum by its true neighbouring samples [prevPrevT, t],
+        // which keeps the golden-section interval unimodal (no over-wide span).
+        const refined = refineMinimum(primary, secondary, prevPrevT, t);
         if (refined && refined.missKm < gateKm) results.push(refined);
         descending = false;
       } else if (cur.d < prev.d) {
@@ -114,6 +120,7 @@ export function findCloseApproaches(
     const v = Math.max(cur?.vRel ?? 1, 0.05);
     const margin = Math.max(d - gateKm, gateKm * 0.5);
     const step = Math.min(maxStep, Math.max(minStep, (margin / v) * 1000 * 0.5));
+    prevPrevT = prevT;
     prev = cur;
     prevT = t;
     t += step;

@@ -42,7 +42,6 @@ function evaluateManeuver(
   conjunction: Conjunction,
   burnMs: number,
   dvRicMps: Vec3,
-  covCombined: Mat3,
 ): PostManeuver {
   const burnState = propagate(primary.tle, burnMs);
   if (!burnState) return { missKm: Infinity, pc: 0, tcaMs: conjunction.tcaMs };
@@ -53,6 +52,8 @@ function evaluateManeuver(
     burnState,
   );
   const maneuvered = applyImpulse(burnState, dvEci);
+  const pEpoch = tleEpochMs(primary.tle);
+  const sEpoch = tleEpochMs(secondary.tle);
 
   let best: PostManeuver = { missKm: Infinity, pc: 0, tcaMs: conjunction.tcaMs };
   // Sample +/- 90 s around nominal TCA to capture the shifted closest approach.
@@ -75,7 +76,20 @@ function evaluateManeuver(
     const vRel: Vec3 = sub(sSgp4.velocity, pVel);
     const miss = norm(rRel);
     if (miss < best.missKm) {
-      const { pc } = collisionProbability(rRel, vRel, covCombined, conjunction.hardBodyRadiusKm);
+      // Rebuild the covariance at THIS evaluation time and at the post-burn
+      // primary state, so the encounter-plane projection uses the correct
+      // relative-velocity orientation for the shifted closest approach.
+      const cov = sumCov(
+        eciCovariance(
+          { epochMs: tEval, position: pPos, velocity: pVel },
+          { ageDays: elementAgeDays(pEpoch, tEval), regime: primary.orbit.regime },
+        ),
+        eciCovariance(sSgp4, {
+          ageDays: elementAgeDays(sEpoch, tEval),
+          regime: secondary.orbit.regime,
+        }),
+      );
+      const { pc } = collisionProbability(rRel, vRel, cov, conjunction.hardBodyRadiusKm);
       best = { missKm: miss, pc, tcaMs: tEval };
     }
   }
@@ -88,14 +102,13 @@ function minDvForLead(
   secondary: SpaceObject,
   conjunction: Conjunction,
   burnMs: number,
-  covCombined: Mat3,
   targetPc: number,
   sign: 1 | -1,
 ): { dv: number; result: PostManeuver; meetsTarget: boolean } | null {
   const dvMax = 5; // m/s upper bound for a LEO avoidance burn
   const make = (mag: number): Vec3 => [0, sign * mag, 0]; // in-track only
   // Feasibility check at the cap.
-  const capRes = evaluateManeuver(primary, secondary, conjunction, burnMs, make(dvMax), covCombined);
+  const capRes = evaluateManeuver(primary, secondary, conjunction, burnMs, make(dvMax));
   if (capRes.pc > targetPc) {
     // Even the maximum burn cannot reach the target at this lead time. Report it
     // as a best-effort solution (not target-meeting) so the planner can still
@@ -108,7 +121,7 @@ function minDvForLead(
   let bestRes = capRes;
   for (let i = 0; i < 26; i++) {
     const mid = (lo + hi) / 2;
-    const res = evaluateManeuver(primary, secondary, conjunction, burnMs, make(mid), covCombined);
+    const res = evaluateManeuver(primary, secondary, conjunction, burnMs, make(mid));
     if (res.pc <= targetPc) {
       hi = mid;
       bestRes = res;
@@ -136,22 +149,13 @@ export function planAvoidance(
   opts: PlanOptions = {},
 ): Maneuver | null {
   const targetPc = opts.targetPc ?? PC_ACTION_THRESHOLD / 10;
+  // A slow co-orbital pair has no valid Foster Pc and is not an avoidance case.
+  if (!conjunction.fosterValid) return null;
   if (conjunction.pc < targetPc) return null; // nothing to do
 
-  // Rebuild the combined covariance at TCA (same model as screening).
-  const pState = propagate(primary.tle, conjunction.tcaMs);
-  const sState = propagate(secondary.tle, conjunction.tcaMs);
-  if (!pState || !sState) return null;
-  const covCombined = sumCov(
-    eciCovariance(pState, {
-      ageDays: elementAgeDays(tleEpochMs(primary.tle), conjunction.tcaMs),
-      regime: primary.orbit.regime,
-    }),
-    eciCovariance(sState, {
-      ageDays: elementAgeDays(tleEpochMs(secondary.tle), conjunction.tcaMs),
-      regime: secondary.orbit.regime,
-    }),
-  );
+  // Confirm both objects propagate at TCA before searching.
+  if (!propagate(primary.tle, conjunction.tcaMs) || !propagate(secondary.tle, conjunction.tcaMs))
+    return null;
 
   const periodSec = primary.orbit.periodMin * 60;
   // Candidate lead times: more orbits of lead => smaller burn. Bounded by the
@@ -168,7 +172,7 @@ export function planAvoidance(
     if (burnMs <= nowMs + 60_000) continue; // need at least a minute of lead
 
     for (const sign of [1, -1] as const) {
-      const solved = minDvForLead(primary, secondary, conjunction, burnMs, covCombined, targetPc, sign);
+      const solved = minDvForLead(primary, secondary, conjunction, burnMs, targetPc, sign);
       if (!solved) continue;
       const propellantKg =
         REFERENCE_MASS_KG * (1 - Math.exp(-solved.dv / (REFERENCE_ISP_S * G0)));

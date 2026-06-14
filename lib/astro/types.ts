@@ -67,6 +67,12 @@ export interface Conjunction {
   hardBodyRadiusKm: number;
   /** Collision probability at TCA (2D Foster method). */
   pc: number;
+  /**
+   * Whether the Foster 2D model applies (relative speed high enough for a short,
+   * straight-line encounter). False for slow co-orbital pairs, where `pc` is not
+   * physically meaningful and must not be used for ranking or alerting.
+   */
+  fosterValid: boolean;
   /** Severity bucket derived from pc. */
   severity: Severity;
 }
