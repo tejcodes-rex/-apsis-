@@ -54,6 +54,15 @@
   .progress{position:absolute;top:0;left:0;height:3px;background:var(--cyan);transition:width .3s}
   .hint{position:absolute;bottom:14px;right:18px;font-family:monospace;font-size:11px;color:var(--dim)}
   .quote{border-left:3px solid var(--red);padding-left:20px}
+
+  /* Print to PDF: Ctrl/Cmd+P in Chrome produces one landscape page per slide. */
+  @page{size:1600px 900px;margin:0}
+  @media print{
+    html,body{overflow:visible;height:auto}
+    .progress,.hint{display:none}
+    .slide{display:flex !important;opacity:1 !important;position:relative !important;
+      inset:auto !important;width:1600px;height:900px;page-break-after:always;break-after:page}
+  }
 </style>
 </head>
 <body>
